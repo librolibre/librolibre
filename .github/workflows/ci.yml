@@ -1,0 +1,111 @@
+name: CI
+
+# Runs the tests on every pull request and on every push to main or develop.
+# Each job skips its steps until its project folder exists, so the workflow
+# is safe to commit before Laravel and Angular are created.
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  backend:
+    name: Backend (Laravel)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: testing
+          MYSQL_ROOT_PASSWORD: password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: testing
+      DB_USERNAME: root
+      DB_PASSWORD: password
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the Laravel project exists
+        id: check
+        working-directory: .
+        run: |
+          if [ -f backend/composer.json ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Set up PHP
+        if: steps.check.outputs.exists == 'true'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, pdo_mysql
+          coverage: none
+
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'true'
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Prepare environment
+        if: steps.check.outputs.exists == 'true'
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Run tests
+        if: steps.check.outputs.exists == 'true'
+        run: php artisan test
+
+  frontend:
+    name: Frontend (Angular)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check that the Angular project exists
+        id: check
+        working-directory: .
+        run: |
+          if [ -f frontend/package.json ]; then echo "exists=true" >> "$GITHUB_OUTPUT"; else echo "exists=false" >> "$GITHUB_OUTPUT"; fi
+
+      - name: Set up Node
+        if: steps.check.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.check.outputs.exists == 'true'
+        run: npm ci
+
+      - name: Run tests
+        if: steps.check.outputs.exists == 'true'
+        # If the project uses Karma instead of Vitest, add: --browsers=ChromeHeadless
+        run: npx ng test --watch=false
+
+      - name: Build
+        if: steps.check.outputs.exists == 'true'
+        run: npx ng build
