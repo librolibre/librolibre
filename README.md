@@ -29,10 +29,10 @@ gantt
     Prototipado HTML/CSS (Front)    :2025-11-08, 2025-11-14
 
     section Fase 3: Desarrollo
-    Sprint 1: Auth + ISBN (Back)   :2025-11-15, 2025-11-28
-    Sprint 1: UI Base + Escáner    :2025-11-15, 2025-11-28
-    Sprint 2: Trueque + Filtros    :2025-11-29, 2025-12-12
-    Sprint 2: UI Trueques + Chat   :2025-11-29, 2025-12-12
+    Sprint 1 - Auth + ISBN (Back)   :2025-11-15, 2025-11-28
+    Sprint 1 - UI Base + Escáner    :2025-11-15, 2025-11-28
+    Sprint 2 - Trueque + Filtros    :2025-11-29, 2025-12-12
+    Sprint 2 - UI Trueques + Chat   :2025-11-29, 2025-12-12
     Integración y Ajustes          :2025-12-13, 2025-12-19
 
     section Fase 4: Cierre y Defensa
