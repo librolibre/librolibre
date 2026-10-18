@@ -18,7 +18,7 @@ gantt
     
     section Fase 1: Definición
     Presentación Curso              :milestone, 2026-09-29, 0d
-    Definición de Ideas Proyecto    :done, 2026-09-03, 2026-10-12
+    Definición de Ideas Proyecto    :done, 2026-09-29, 2026-10-12
     Hito - Presentación Idea        :milestone, 2026-10-09, 0d
     Elaboración Propuesta Técnica   :done, 2026-10-12, 2026-10-24
     Hito - Entrega Propuesta        :milestone, 2026-10-23, 0d
