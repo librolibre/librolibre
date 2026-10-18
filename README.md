@@ -17,10 +17,11 @@ gantt
     axisFormat %d/%m
     
     section Fase 1: Definición
-    Inicio y Formación Equipo     :done, 2025-09-29, 2025-10-10
-    Hito: Presentación Idea        :milestone, 2025-10-10, 0d
-    Elaboración Propuesta Técnica  :done, 2025-10-11, 2025-10-24
-    Hito: Entrega Propuesta        :milestone, 2025-10-24, 0d
+    Presentación Curso              :milestone, 2026-09-29, 0d
+    Definición de Ideas Proyecto    :done, 2026-09-03, 2026-10-12
+    Hito - Presentación Idea        :milestone, 2026-10-09, 0d
+    Elaboración Propuesta Técnica   :done, 2025-10-12, 2025-10-24
+    Hito - Entrega Propuesta        :milestone, 2025-10-23, 0d
 
     section Fase 2: Análisis y Diseño
     Modelo E/R y Casos de Uso (Back) :active, 2025-10-25, 2025-11-07
