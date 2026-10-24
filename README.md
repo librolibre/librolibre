@@ -31,6 +31,8 @@ gantt
 
     section Fase 3: Desarrollo
     Pantalla login y Auth           :2026-11-15, 2026-11-28
+    Pantallas Cuentas y perfil      :2026-11-15, 2026-11-28
+    Biblioteca Personal             :2026-11-15, 2026-11-28
     Panel Admin                     :2026-11-15, 2026-11-28
     Panel Admin (Usuarios)          :2026-11-15, 2026-11-28
     Panel Admin (Libros?)           :2026-11-15, 2026-11-28
@@ -38,10 +40,9 @@ gantt
     Panel de Usuario (General)      :2026-11-28, 2026-12-12
     Subir Libro y ficha de libro    :2026-11-28, 2026-12-12
     Autocompletado ISBN             :2026-11-28, 2026-12-12
-    Panel de Usuario (mis libros)   :2026-12-12, 2026-12-26
-    Buscador de Libros              :2026-12-12, 2026-12-26
-    Trueque de libros               :2026-12-12, 2026-12-26
-    Chat                            :2026-12-12, 2026-12-26
+    Catalogo y Búsqueda             :2026-12-12, 2026-12-26
+    Trueque y donación              :2026-12-12, 2026-12-26
+    Comunicación (Chat)             :2026-12-12, 2026-12-26
     Seguimiento de intercambios     :2026-12-12, 2026-12-26
     Reputación y seguridad          :2026-12-12, 2026-12-26
     Reportar usuario                :2026-12-12, 2026-12-26
