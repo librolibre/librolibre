@@ -7,6 +7,7 @@ Aplicación web para intercambiar y donar libros entre vecinos. Proyecto final d
 - **Base de datos:** MySQL
 - **Documentación:** `docs/`
 
+.
 
 ## Diagrama Gantt Proyecto
 
