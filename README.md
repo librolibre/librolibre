@@ -39,7 +39,7 @@ gantt
     Subir Libro y ficha de libro    :2026-11-28, 2026-12-12
     Biblioteca Personal             :2026-11-28, 2026-12-12
     Autocompletado ISBN y Camara    :2026-11-28, 2026-12-12
-    Panel Admin (Libros?)           :2026-11-28, 2026-12-28
+    Panel Admin (Libros?)           :2026-11-28, 2026-12-12
     Trueque y donación y notificaciones                    :2026-12-12, 2026-12-26
     Comunicación (Chat)             :2026-12-12, 2026-12-26
     Valoración y Bloqueo            :2026-12-12, 2026-12-26
