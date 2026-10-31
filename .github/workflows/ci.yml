@@ -16,25 +16,45 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      mysql:
-        image: mysql:8.0
+      # --- Previous MySQL setup (kept until the Postgres version is confirmed working) ---
+      # mysql:
+      #   image: mysql:8.0
+      #   env:
+      #     MYSQL_DATABASE: testing
+      #     MYSQL_ROOT_PASSWORD: password
+      #   ports:
+      #     - 3306:3306
+      #   options: >-
+      #     --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+      #     --health-interval=10s
+      #     --health-timeout=5s
+      #     --health-retries=5
+      postgres:
+        image: postgres:18
         env:
-          MYSQL_DATABASE: testing
-          MYSQL_ROOT_PASSWORD: password
+          POSTGRES_DB: testing
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-cmd="pg_isready -U postgres"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
     env:
-      DB_CONNECTION: mysql
+      # DB_CONNECTION: mysql
+      # DB_HOST: 127.0.0.1
+      # DB_PORT: 3306
+      # DB_DATABASE: testing
+      # DB_USERNAME: root
+      # DB_PASSWORD: password
+      DB_CONNECTION: pgsql
       DB_HOST: 127.0.0.1
-      DB_PORT: 3306
+      DB_PORT: 5432
       DB_DATABASE: testing
-      DB_USERNAME: root
+      DB_USERNAME: postgres
       DB_PASSWORD: password
 
     defaults:
@@ -54,8 +74,8 @@ jobs:
         if: steps.check.outputs.exists == 'true'
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          extensions: mbstring, pdo_mysql
+          php-version: '8.5'
+          extensions: mbstring, pdo_pgsql
           coverage: none
 
       - name: Install dependencies

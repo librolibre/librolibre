@@ -29,3 +29,7 @@ frontend/coverage/
 *.swp
 .DS_Store
 Thumbs.db
+
+# --- AI assistant files (personal, not shared) ---
+CLAUDE.md
+AGENTS.md
