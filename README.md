@@ -48,7 +48,7 @@ gantt
 
     section Fase 4: Cierre y Defensa
     Testing y Despliegue           :2026-12-26, 2027-01-02
-    Memoria y Diapositivas         :2027-01-03, 2027-01-12
+    Memoria y Diapositivas         :2026-11-07, 2027-01-12
     Ensayos Defensa                :2027-01-13, 2027-01-14
     Hito: Defensa Oral             :milestone, 2027-01-15, 0d
 ```
