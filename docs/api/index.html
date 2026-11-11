@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LibroLibre API · Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css">
+  <style>body { margin: 0; background: #fafafa; }</style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+  <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
+  <script>
+    // Dos especificaciones en el mismo Swagger UI (desplegable arriba a la derecha):
+    //  - Diseño: el contrato escrito a mano (openapi.yaml, junto a este fichero).
+    //  - Implementación: la que genera Scramble desde Laravel (necesita Laravel en marcha
+    //    y 'docs/*' en las rutas de config/cors.php).
+    window.ui = SwaggerUIBundle({
+      urls: [
+        { name: 'Diseño (openapi.yaml)', url: './openapi.yaml' },
+        { name: 'Implementación (Scramble, localhost)', url: 'http://localhost:8000/docs/api.json' },
+      ],
+      'urls.primaryName': 'Diseño (openapi.yaml)',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      persistAuthorization: true,
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIStandalonePreset],
+      layout: 'StandaloneLayout',
+    });
+  </script>
+</body>
+</html>
