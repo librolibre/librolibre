@@ -1,0 +1,1623 @@
+openapi: 3.1.0
+info:
+  title: LibroLibre API
+  version: 0.1.0
+  description: |
+    Contrato de la API REST de LibroLibre (diseño previo a la implementación) que se ha creado a partir del
+    análisis funcional v3 y del diagrama E/R.
+
+    El plan es que según se implemente cada endpoint, se va a documentar con **Scramble** (`/docs/api`) y luego
+    ese mismo endpoint se va a eliminar de este fichero.
+
+    ## "Conventions" de la API
+    - Code in English pero por supuesto, los textos para el usuario en Spanish.
+    - Recursos en plural según convención Laravel: e.g. `/books`, `/offers`. Claves de JSON en `snake_case` siempre.
+    - Autenticación: se realiza con token de **Laravel Sanctum** en Header al estilo `Authorization: Bearer <token>`.
+      El token se obtiene con el acceso con Google (ver `Auth`).
+    - Fechas en ISO 8601 (`2026-11-02T13:30:00Z`).
+    - Listados paginados: `?page=2`, 20 elementos por página, con la forma
+      `{ data: [...], links: {...}, meta: {...} }` de Laravel.
+    - Errores:
+      - `401` - sin token o token no válido.
+      - `403` - sin permiso para acceder (es decir, no es el propietario, no es parte de la solicitud o no es administrador).
+      - `404` - does not exist (o también si el recurso no es visible para ese usuario por un bloqueo).
+      - `409` - la operación incumple una regla de negocio (RN-xx); el cuerpo incluye un `code`.
+      - `422` - validation error, formato estándar de Laravel.
+    - Address/Ubicación del usuario: el servidor solo guarda y devuelve coordenadas redondeadas, no guarda dirección (EU GDPR/Protección de datos).
+    - Chat en tiempo real: además de los endpoints REST, los mensajes nuevos se emiten por
+      Laravel Reverb en el canal privado `offer.{id}` (evento `MessageSent`).
+servers:
+  - url: http://localhost:8000/api
+    description: Local (php artisan serve)
+
+tags:
+  - name: System
+    description: Estado del servidor (comprobar que la API responde)
+  - name: Auth
+    description: Acceso con Google y cierre de sesión (HU-01, HU-02 · CU-01, CU-02)
+  - name: Profile
+    description: Mi perfil y mi cuenta (HU-03, HU-04 · CU-03)
+  - name: Users
+    description: Perfil público y valoraciones (RF-18, RF-31)
+  - name: Reference data
+    description: ISBN, categorías e idiomas (HU-05, HU-11)
+  - name: My books
+    description: Mi biblioteca (HU-05 a HU-09 · CU-05, CU-06)
+  - name: Catalog
+    description: Búsqueda, ficha y mapa (HU-10 a HU-12 · CU-04)
+  - name: Offers
+    description: Trueques y donaciones (HU-13 a HU-18 · CU-07 a CU-12)
+  - name: Chat
+    description: Chat de una solicitud (HU-20 · CU-13)
+  - name: Ratings
+    description: Valoraciones (HU-21 · CU-14)
+  - name: Notifications
+    description: Centro de notificaciones (HU-19 · CU-15)
+  - name: Blocks
+    description: Bloqueo entre usuarios (HU-22 · CU-16)
+  - name: Reports
+    description: Denuncias (HU-27 · CU-17)
+  - name: Admin
+    description: Panel de administración (HU-23 a HU-26, HU-28 · CU-18 a CU-20)
+  - name: Suggestions
+    description: Sugerencias de libros cercanos (RF-38)
+
+security:
+  - sanctum: []
+
+paths:
+  # ------------------------------------------------------------------ System
+  /health:
+    get:
+      tags: [System]
+      summary: Comprobar que la API responde
+      security: []
+      responses:
+        '200':
+          description: The API works. Felicidades. Sabes programar.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+
+  # ------------------------------------------------------------------ Auth
+  /auth/google/redirect:
+    get:
+      tags: [Auth]
+      summary: Iniciar el acceso con Google
+      description: Redirige al usuario a la pantalla de consentimiento de Google (Socialite).
+      security: []
+      responses:
+        '302':
+          description: Redirección a Google.
+  /auth/google/callback:
+    get:
+      tags: [Auth]
+      summary: Volver de Google
+      description: |
+        Google redirige aquí después de que el usuario de su consentimiento. El servidor crea la cuenta 
+        si es la primera vez y redirige al front end con un **código de un solo uso** (válido 60 secs.),
+        para que el token no quede en el historial ni en logs:
+
+        - Éxito: `{FRONTEND_URL}/auth/callback?code=<código>`
+        - Cancelado en Google: `{FRONTEND_URL}/?error=cancelled`
+        - Cuenta suspendida: `{FRONTEND_URL}/?error=suspended`
+
+        El front end hace un intercambio, el código por el token, con `POST /auth/token`.
+      security: []
+      parameters:
+        - { name: code, in: query, required: false, schema: { type: string } }
+        - { name: state, in: query, required: false, schema: { type: string } }
+      responses:
+        '302':
+          description: Redirección al front end con el código o con un error.
+  /auth/token:
+    post:
+      tags: [Auth]
+      summary: Canjear el código de un solo uso por un token
+      description: |
+        El código solo sirve una vez y caduca a los 60 segundos. Si `is_new_user` es `true`, el front end
+        pide aceptar la política de privacidad y poder guardar la zona con el código postal. 
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code: { type: string }
+      responses:
+        '200':
+          description: Sesión iniciada.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token, is_new_user, user]
+                properties:
+                  token: { type: string, example: '1|aBcD…' }
+                  is_new_user: { type: boolean }
+                  user: { $ref: '#/components/schemas/OwnUser' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Cerrar sesión
+      description: Revoca el token actual.
+      responses:
+        '204': { description: Sesión cerrada. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ------------------------------------------------------------------ Profile
+  /me:
+    get:
+      tags: [Profile]
+      summary: Obtener mi perfil
+      responses:
+        '200': { $ref: '#/components/responses/OwnUserOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    patch:
+      tags: [Profile]
+      summary: Editar mi perfil
+      description: RF-04. Solo se cambian los campos enviados. Las coordenadas se redondean antes de guardarse.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ProfileInput' }
+      responses:
+        '200': { $ref: '#/components/responses/OwnUserOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [Profile]
+      summary: Eliminar mi cuenta
+      description: |
+        RF-05, RN-16. Con esto se cancelan todas las solicitudes en curso, se avisa a la(s) otra(s) parte(s) y 
+        se retiran los libros. La confirmación («¿Seguro?») la pide el front end.
+      responses:
+        '204': { description: Cuenta eliminada. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /me/privacy-consent:
+    post:
+      tags: [Profile]
+      summary: Aceptar la política de privacidad
+      description: Primer acceso (Si es la primera vez que accede con Google)
+      responses:
+        '204': { description: Aceptación registrada. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /me/photo:
+    post:
+      tags: [Profile]
+      summary: Cambiar mi foto de perfil
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [photo]
+              properties:
+                photo: { type: string, format: binary, description: 'JPG o PNG, máximo 2 MB.' }
+      responses:
+        '200': { $ref: '#/components/responses/OwnUserOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /me/books:
+    get:
+      tags: [My books]
+      summary: Mostrar la biblioteca del usuario
+      parameters:
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/BookStatus' }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Mis libros (no incluye los retirados).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedBooks' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ------------------------------------------------------------------ Users
+  /users/{user}:
+    get:
+      tags: [Users]
+      summary: Ver el perfil público de un usuario
+      description: RF-18. Nunca incluye email ni ubicación.
+      security:
+        - {}
+        - sanctum: []
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '200':
+          description: Perfil público.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/PublicUser' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /users/{user}/ratings:
+    get:
+      tags: [Users]
+      summary: Ver las valoraciones publicadas de otros usuarios
+      description: Solo las publicadas (RN-13).
+      security:
+        - {}
+        - sanctum: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Valoraciones recibidas.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedRatings' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ------------------------------------------------------------------ Reference data
+  /isbn/{isbn}:
+    get:
+      tags: [Reference data]
+      summary: Buscar los datos de un libro por ISBN
+      description: |
+        Consulta Open Library (con caché). Si el libro no existe u Open Library no responde,
+        devuelve `found: false` para que el usuario pueda rellenar los datos manualmente.
+      parameters:
+        - name: isbn
+          in: path
+          required: true
+          description: ISBN-10 o ISBN-13, sin guiones.
+          schema: { type: string, pattern: '^(\d{9}[\dX]|\d{13})$', example: '9788420412146' }
+      responses:
+        '200':
+          description: Resultado de la búsqueda.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/IsbnLookup' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /categories:
+    get:
+      tags: [Reference data]
+      summary: Mostrar lista de las categorías (géneros)
+      security: []
+      responses:
+        '200':
+          description: Todas las categorías.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Category' }
+  /languages:
+    get:
+      tags: [Reference data]
+      summary: Mostrar lista de los idiomas
+      description: Para el idioma del libro y los idiomas de lectura del perfil, no para la localización de la app.
+      security: []
+      responses:
+        '200':
+          description: Todos los idiomas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Language' }
+
+  # ------------------------------------------------------------------ My books
+  /books:
+    post:
+      tags: [My books]
+      summary: Publicar un libro
+      description: RF-06 a RF-11. Se crea automaticamente en estado `available`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '201': { $ref: '#/components/responses/BookOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /books/{book}:
+    get:
+      tags: [Catalog]
+      summary: Ver la ficha de un libro
+      security:
+        - {}
+        - sanctum: []
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      responses:
+        '200': { $ref: '#/components/responses/BookOk' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    put:
+      tags: [My books]
+      summary: Editar la ficha de un libro
+      description: Solo el propietario del libro puede editar su ficha (RF-12).
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BookInput' }
+      responses:
+        '200': { $ref: '#/components/responses/BookOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [My books]
+      summary: Retirar un libro
+      description: Pasa a `withdrawn` (estado final). No se permite retirar el libro de la lista
+                   si está reservado en un intercambio aceptado.
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      responses:
+        '204': { description: Libro retirado. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /books/{book}/pause:
+    post:
+      tags: [My books]
+      summary: Pausar un libro (es decir parar temporalmente la disponibilidad de un libro)
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      responses:
+        '200': { $ref: '#/components/responses/BookOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /books/{book}/resume:
+    post:
+      tags: [My books]
+      summary: Reactivar un libro pausado
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      responses:
+        '200': { $ref: '#/components/responses/BookOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /books/{book}/photos:
+    post:
+      tags: [My books]
+      summary: Añadir fotos a la ficha de un libro
+      description: Se pueden subir hasta 5 fotos de un libro.
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: ['photos[]']
+              properties:
+                'photos[]':
+                  type: array
+                  maxItems: 5
+                  items: { type: string, format: binary }
+      responses:
+        '200': { $ref: '#/components/responses/BookOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /books/{book}/photos/{photo}:
+    delete:
+      tags: [My books]
+      summary: Eliminar una foto de la ficha del un libro
+      parameters:
+        - $ref: '#/components/parameters/BookId'
+        - { name: photo, in: path, required: true, schema: { type: integer } }
+      responses:
+        '204': { description: Foto eliminada. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ------------------------------------------------------------------ Catalog
+  /catalog:
+    get:
+      tags: [Catalog]
+      summary: Buscar en el catálogo
+      description: |
+        RF-13 a RF-19. No incluye los libros propios ni de los otros usuarios bloqueados (en ambos sentidos)
+        ni tampoco los pausados, ocultos, retirados o entregados. Los reservados se incluyen con
+        `status: reserved`. Un visitante (sin token) recibe los resultados sin `distance_km` (RF-02).
+        Debe responder en menos de 3 segundos.
+      security:
+        - {}
+        - sanctum: []
+      parameters:
+        - { name: q, in: query, description: 'Título, autor o ISBN.', schema: { type: string } }
+        - { name: category_id, in: query, schema: { type: integer } }
+        - { name: language, in: query, description: 'Código ISO 639-1.', schema: { type: string, example: es } }
+        - name: min_condition
+          in: query
+          description: Estado mínimo; devuelve ese estado o mejores.
+          schema: { $ref: '#/components/schemas/BookCondition' }
+        - name: exclude_defects
+          in: query
+          description: Excluye los libros con los defectos especificados(e.g., «sin subrayados»).
+          style: form
+          explode: true
+          schema:
+            type: array
+            items: { $ref: '#/components/schemas/Defect' }
+        - { name: binding_type, in: query, schema: { $ref: '#/components/schemas/BindingType' } }
+        - { name: is_donation, in: query, description: '`true`: solo libros que se pueden pedir en donación.', schema: { type: boolean } }
+        - { name: year_min, in: query, schema: { type: integer, example: 1990 } }
+        - { name: year_max, in: query, schema: { type: integer, example: 2026 } }
+        - { name: max_distance, in: query, description: 'En km. Requiere ubicación en el perfil.', schema: { type: number, example: 5 } }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [distance, newest, title], default: newest }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Resultados.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedBooks' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /catalog/map:
+    get:
+      tags: [Catalog]
+      summary: Obtener los marcadores del mapa
+      description: |
+        RF-17, HU-12. Mismos filtros que `/catalog`, sin paginar, con un máximo de 200 marcadores.
+        Las coordenadas son aproximadas y se muestran con la API de Google Maps.
+        Disponible para visitantes, igual que el catálogo (CU-04).
+      security:
+        - {}
+        - sanctum: []
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+        - { name: category_id, in: query, schema: { type: integer } }
+        - { name: is_donation, in: query, schema: { type: boolean } }
+        - { name: max_distance, in: query, schema: { type: number } }
+      responses:
+        '200':
+          description: Marcadores.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/MapMarker' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  # ------------------------------------------------------------------ Offers
+  /offers:
+    get:
+      tags: [Offers]
+      summary: Mostrar lista de mis solicitudes
+      description: RF-26. Pestañas de enviadas, recibidas e historial.
+      parameters:
+        - name: inbox
+          in: query
+          required: true
+          schema: { type: string, enum: [sent, received, history] }
+        - name: book_id
+          in: query
+          description: Solo las solicitudes sobre este libro propio (para elegir destinatario de una donación, RF-23).
+          schema: { type: integer }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Solicitudes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedOffers' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Offers]
+      summary: Proponer un trueque o pedir una donación
+      description: |
+        RF-20, RF-22. Crea una solicitud en status de `pending`, abre su chat y notifica al propietario.
+        Reglas: RN-02 (no se piden libros propios), RN-03 (un libro ofrecido y uno pedido),
+        RN-04 (donación solo si `is_donation`), RN-05 y RN-07 (el ofrecido queda bloqueado).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfferInput' }
+      responses:
+        '201': { $ref: '#/components/responses/OfferOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /offers/{offer}:
+    get:
+      tags: [Offers]
+      summary: Ver una solicitud
+      description: Solo para las dos partes del intercambio.
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200': { $ref: '#/components/responses/OfferOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /offers/{offer}/accept:
+    post:
+      tags: [Offers]
+      summary: Aceptar una solicitud o una contraoferta
+      description: |
+        El propietario acepta una solicitud que está en `pending`, o el solicitante acepta una `counteroffer`.
+        Reserva los libros (RN-08), rechaza las demás solicitudes sobre el libro (RN-06) y cancela el trueque
+        en el que se ofrecía (RN-07).
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200': { $ref: '#/components/responses/OfferOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /offers/{offer}/reject:
+    post:
+      tags: [Offers]
+      summary: Rechazar una solicitud o una contraoferta
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200': { $ref: '#/components/responses/OfferOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /offers/{offer}/counteroffer:
+    post:
+      tags: [Offers]
+      summary: Hacer una contraoferta
+      description: Solo en trueques y solo una vez por solicitud (RN-09). El propietario puede elegir otro libro 
+                   de la biblioteca del solicitante.
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [offered_book_id]
+              properties:
+                offered_book_id:
+                  type: integer
+                  description: Libro del solicitante que pide el propietario.
+      responses:
+        '200': { $ref: '#/components/responses/OfferOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /offers/{offer}/cancel:
+    post:
+      tags: [Offers]
+      summary: Cancelar una solicitud
+      description: |
+        El solicitante cancela su solicitud que está en`pending` (RF-24), o cualquiera de las partes
+        cancela un intercambio `accepted` antes de que se complete.
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200': { $ref: '#/components/responses/OfferOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /offers/{offer}/confirm-delivery:
+    post:
+      tags: [Offers]
+      summary: Confirmar la entrega
+      description: |
+        RF-25, RN-11. Cuando confirman las dos partes, la solicitud pasa a `completed`. Si solo
+        confirma uno de los dos, una tarea programada completa la soliacitud igual a los 3 días.
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '200': { $ref: '#/components/responses/OfferOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+
+  # ------------------------------------------------------------------ Chat
+  /offers/{offer}/messages:
+    get:
+      tags: [Chat]
+      summary: Leer la conversación de una solicitud
+      description: Mostrar los mensajes más recientes primero. Los nuevos llegan en tiempo real por Reverb (canal privado `offer.{id}`).
+      parameters:
+        - $ref: '#/components/parameters/OfferId'
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Mensajes.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedMessages' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Chat]
+      summary: Enviar un mensaje
+      description: No se permite si la conversación está en solo lectura (RN-14) o uno de los usuarios está bloqueado (RN-15).
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [body]
+              properties:
+                body: { type: string, minLength: 1, maxLength: 2000 }
+      responses:
+        '201':
+          description: Mensaje enviado.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Message' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /offers/{offer}/messages/read:
+    post:
+      tags: [Chat]
+      summary: Marcar la conversación como leída
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      responses:
+        '204': { description: Mensajes marcados como leídos. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ------------------------------------------------------------------ Ratings
+  /offers/{offer}/rating:
+    post:
+      tags: [Ratings]
+      summary: Valorar a la otra parte
+      description: Solo en solicitudes `completed`, una vez por parte (RN-12). Se publica cuando hagan la valoración las dos (RN-13).
+      parameters: [{ $ref: '#/components/parameters/OfferId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score]
+              properties:
+                score: { type: integer, minimum: 1, maximum: 5 }
+                comment: { type: [string, 'null'], maxLength: 500 }
+      responses:
+        '201':
+          description: Valoración registrada.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/Rating' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  # ------------------------------------------------------------------ Notifications
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: Mostrar lista de mis notificaciones
+      description: Ordenadas por fecha, las más recientes primero (CU-15).
+      parameters:
+        - { name: unread_only, in: query, schema: { type: boolean, default: false } }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Notificaciones.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedNotifications' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /notifications/unread-count:
+    get:
+      tags: [Notifications]
+      summary: Contador de las notificaciones sin leer
+      description: Para el contador del menú.
+      responses:
+        '200':
+          description: Contador.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count: { type: integer, example: 3 }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+  /notifications/{notification}/read:
+    post:
+      tags: [Notifications]
+      summary: Marcar una notificación como leída
+      parameters:
+        - { name: notification, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '204': { description: Marcada como leída. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /notifications/read-all:
+    post:
+      tags: [Notifications]
+      summary: Marcar todas como leídas
+      responses:
+        '204': { description: Todas marcadas como leídas. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  # ------------------------------------------------------------------ Blocks
+  /blocks:
+    get:
+      tags: [Blocks]
+      summary: Mostrar una lista de los usuarios que han sido bloqueados por el usuario
+      responses:
+        '200':
+          description: Usuarios bloqueados.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/UserSummary' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [Blocks]
+      summary: Bloquear a un usuario
+      description: RF-32, RN-15. Cancela las solicitudes pendientes entre los dos.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id: { type: integer }
+      responses:
+        '204': { description: Usuario bloqueado. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /blocks/{user}:
+    delete:
+      tags: [Blocks]
+      summary: Desbloquear a un usuario
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '204': { description: Usuario desbloqueado. }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ------------------------------------------------------------------ Reports
+  /reports:
+    post:
+      tags: [Reports]
+      summary: Denunciar a un usuario
+      description: |
+        RF-36, CU-17. Las denuncias se hacen sobre un usuario (no sobre libros, ni sobre intercambios). `offer_id` es opcional:
+        indica desde qué solicitud o chat se ha denunciado, como contexto para el administrador.
+        Reglas: RN-21 (ni uno mismo ni un administrador), RN-22 (una abierta por persona).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ReportInput' }
+      responses:
+        '201':
+          description: Denuncia registrada como `open`.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/OwnReport' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  # ------------------------------------------------------------------ Admin
+  /admin/users:
+    get:
+      tags: [Admin]
+      summary: Mostrar lista de usuarios
+      description: RF-34, CU-18. Solo administradores.
+      parameters:
+        - { name: q, in: query, description: Nombre o email., schema: { type: string } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/UserStatus' } }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Usuarios.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedAdminUsers' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/users/{user}:
+    get:
+      tags: [Admin]
+      summary: Ver el detalle de un usuario
+      description: Libros, intercambios, valoraciones, denuncias recibidas y strikes.
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      responses:
+        '200':
+          description: Detalle.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/AdminUserDetail' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/users/{user}/suspend:
+    post:
+      tags: [Admin]
+      summary: Suspender una cuenta
+      description: RN-17. No se puede suspender a un admin, ni por supuesto a uno mismo (RN-19).
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      requestBody: { $ref: '#/components/requestBodies/Reason' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminUserOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/users/{user}/reactivate:
+    post:
+      tags: [Admin]
+      summary: Reactivar una cuenta
+      description: Un "reset de strikes", los libros vuelven a estar disponibles y el contador de strikes vuelve a cero (RN-26).
+      parameters: [{ $ref: '#/components/parameters/UserId' }]
+      requestBody: { $ref: '#/components/requestBodies/Reason' }
+      responses:
+        '200': { $ref: '#/components/responses/AdminUserOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /admin/books:
+    get:
+      tags: [Admin]
+      summary: Mostrar lista de los libros publicados
+      description: RF-35, CU-19.
+      parameters:
+        - { name: q, in: query, description: 'Título, autor o propietario.', schema: { type: string } }
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/BookStatus' } }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Libros.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedBooks' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/books/{book}/hide:
+    post:
+      tags: [Admin]
+      summary: Ocultar un libro
+      description: |
+        RN-18. Cancela sus solicitudes en curso y avisa al propietario con el motivo. Si el libro
+        está reservado, hay que enviar `confirm_cancellation: true` (CU-19, 4b); si no, responde
+        `409` con `code: BOOK_RESERVED`.
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reason]
+              properties:
+                reason: { type: string, maxLength: 500 }
+                confirm_cancellation: { type: boolean, default: false }
+      responses:
+        '200': { $ref: '#/components/responses/BookOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/books/{book}/restore:
+    post:
+      tags: [Admin]
+      summary: Restaurar un libro oculto
+      parameters: [{ $ref: '#/components/parameters/BookId' }]
+      responses:
+        '200': { $ref: '#/components/responses/BookOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  /admin/reports:
+    get:
+      tags: [Admin]
+      summary: Mostrar lista de denuncias
+      description: RF-37, CU-20. Por defecto, las abiertas.
+      parameters:
+        - { name: status, in: query, schema: { $ref: '#/components/schemas/ReportStatus' } }
+        - { name: reason, in: query, schema: { $ref: '#/components/schemas/ReportReason' } }
+        - { name: reported_user_id, in: query, schema: { type: integer } }
+        - $ref: '#/components/parameters/Page'
+      responses:
+        '200':
+          description: Denuncias.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginatedReports' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /admin/reports/{report}:
+    get:
+      tags: [Admin]
+      summary: Ver una denuncia
+      parameters: [{ $ref: '#/components/parameters/ReportId' }]
+      responses:
+        '200': { $ref: '#/components/responses/ReportOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /admin/reports/{report}/validate:
+    post:
+      tags: [Admin]
+      summary: Marcar una denuncia como válida
+      description: |
+        RF-39 a RF-41. Suma un strike al denunciado, salvo que ese denunciante ya le hubiera sumado
+        uno (RN-25). Con tres strikes, la cuenta se suspende automáticamente (RN-26).
+        Notifica al denunciado y al denunciante (RN-27).
+      parameters: [{ $ref: '#/components/parameters/ReportId' }]
+      requestBody: { $ref: '#/components/requestBodies/Reason' }
+      responses:
+        '200': { $ref: '#/components/responses/ReportOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+  /admin/reports/{report}/dismiss:
+    post:
+      tags: [Admin]
+      summary: Descartar una denuncia
+      parameters: [{ $ref: '#/components/parameters/ReportId' }]
+      requestBody: { $ref: '#/components/requestBodies/Reason' }
+      responses:
+        '200': { $ref: '#/components/responses/ReportOk' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  # ------------------------------------------------------------------ Suggestions
+  /suggestions:
+    get:
+      tags: [Suggestions]
+      summary: Sugerir libros cercanos
+      description: RF-38 (Baja). Mismo autor o categoría que los pedidos o publicados.
+      responses:
+        '200':
+          description: Hasta 10 libros sugeridos.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Book' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+components:
+  securitySchemes:
+    sanctum:
+      type: http
+      scheme: bearer
+      description: Token personal de Laravel Sanctum obtenido con `POST /auth/token`.
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    UserId:
+      name: user
+      in: path
+      required: true
+      schema: { type: integer }
+    BookId:
+      name: book
+      in: path
+      required: true
+      schema: { type: integer }
+    OfferId:
+      name: offer
+      in: path
+      required: true
+      schema: { type: integer }
+    ReportId:
+      name: report
+      in: path
+      required: true
+      schema: { type: integer }
+
+  requestBodies:
+    Reason:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [reason]
+            properties:
+              reason: { type: string, maxLength: 500, description: Motivo de la decisión (queda registrado). }
+
+  responses:
+    Unauthenticated:
+      description: Falta el token o no es válido.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: Unauthenticated. }
+    Forbidden:
+      description: El usuario no tiene permiso para esta acción.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { message: This action is unauthorized. }
+    NotFound:
+      description: El recurso no existe o no es visible para el usuario.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationFailed:
+      description: Error de validación (formato estándar de Laravel).
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ValidationError' }
+    BusinessRuleViolation:
+      description: La operación incumple una regla de negocio.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/BusinessRuleError' }
+    OwnUserOk:
+      description: Mi perfil.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/components/schemas/OwnUser' }
+    BookOk:
+      description: Libro.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/components/schemas/Book' }
+    OfferOk:
+      description: Solicitud.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/components/schemas/Offer' }
+    AdminUserOk:
+      description: Usuario actualizado.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/components/schemas/AdminUser' }
+    ReportOk:
+      description: Denuncia.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/components/schemas/AdminReport' }
+
+  schemas:
+    # ---------------------------------------------------------------- errors
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
+    ValidationError:
+      type: object
+      required: [message, errors]
+      properties:
+        message: { type: string, example: El campo título es obligatorio. }
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items: { type: string }
+          example:
+            title: [El campo título es obligatorio.]
+    BusinessRuleError:                  # Errores de business logic
+      type: object
+      required: [message, code]
+      properties:
+        message: { type: string, example: Este libro ya está ofrecido en otro trueque pendiente. }
+        code:
+          type: string
+          description: Código estable para que el front end muestre el mensaje adecuado.
+          enum:
+            - OWN_BOOK                  # RN-02
+            - BOOK_NOT_AVAILABLE        # CU-07 4a
+            - TRADE_ONLY                # RN-04
+            - BOOK_LOCKED               # RN-07
+            - BOOK_RESERVED             # RN-08 / CU-19 4b
+            - COUNTEROFFER_ALREADY_MADE # RN-09
+            - INVALID_STATUS            # transición de estado no permitida
+            - CHAT_READ_ONLY            # RN-14
+            - USER_BLOCKED              # RN-15
+            - ALREADY_RATED             # RN-12
+            - REPORT_NOT_ALLOWED        # RN-21
+            - REPORT_ALREADY_OPEN       # RN-22
+            - ADMIN_PROTECTED           # RN-19
+          example: BOOK_LOCKED
+
+    # ---------------------------------------------------------------- enums
+    BookCondition:
+      type: string
+      description: |
+        Estado general, de mejor a peor. Corresponde a `book_conditions.code`.
+        new = Nuevo · like_new = Como nuevo · very_good = Muy bueno · good = Bueno · acceptable = Aceptable.
+      enum: [new, like_new, very_good, good, acceptable]
+    Defect:
+      type: string
+      description: Defectos que tiene el libro. Corresponde a `defects.code`.
+      enum:
+        - underlining         # Subrayado o resaltado
+        - margin_notes        # Anotaciones en los márgenes
+        - doodles             # Garabatos o dibujos
+        - name_or_dedication  # Nombre o dedicatoria escritos
+        - damaged_cover       # Cubierta dañada
+        - damaged_spine       # Lomo dañado o despegado
+        - folded_pages        # Páginas dobladas
+        - loose_pages         # Páginas sueltas, rotas o arrancadas
+        - water_damage        # Manchas o daños por humedad
+        - yellowed_pages      # Páginas amarillentas
+        - odor                # Olor (humo, humedad)
+        - child_use           # Señales de uso infantil (y lo que conlleva)
+        - missing_material    # Falta sobrecubierta o material adicional
+        - library_stamp       # Sello o etiqueta de biblioteca
+    BindingType:
+      type: string
+      description: Formato de encuadernación. Corresponde a `binding_types.code`.
+      enum: [paperback, hardcover, pocket, other]
+    BookStatus:
+      type: string
+      description: Life cycle de un libro.
+      enum: [available, locked, reserved, delivered, paused, hidden, withdrawn]
+    OfferStatus:
+      type: string
+      description: Estados de una solicitud. Corresponde a `offer_statuses.code`.
+      enum: [pending, counteroffer, accepted, completed, rejected, cancelled]
+    OfferType:
+      type: string
+      enum: [trade, donation]
+    UserStatus:
+      type: string
+      enum: [active, suspended]
+    UserRole:
+      type: string
+      description: Corresponde a `profiles.code`.
+      enum: [user, admin]
+    ReportStatus:
+      type: string
+      description: RN-24.
+      enum: [open, valid, dismissed]
+    ReportReason:
+      type: string
+      description: Lista cerrada de las posibles causas de denuncia.
+      enum:
+        - harassment
+        - offensive_content
+        - spam
+        - sale_attempt
+        - false_information
+        - impersonation
+        - no_show      
+        - other               # Otro (la descripción será obligatoria)
+    MessageType:
+      type: string
+      description: |
+        `text` es un mensaje escrito por una persona; el resto son eventos de la solicitud que el
+        servidor añade al chat y el front muestra como 'tarjetas' (al estilo Wallapop).
+      enum: 
+        - text        
+        - offer_created
+        - counteroffer
+        - accepted
+        - rejected
+        - cancelled
+        - delivery_confirmed
+        - completed
+        - rated    
+    NotificationType:
+      type: string
+      enum:
+        - offer_received
+        - offer_accepted
+        - offer_rejected
+        - offer_cancelled
+        - counteroffer_received
+        - delivery_pending
+        - exchange_completed
+        - message_received
+        - rating_published
+        - book_hidden
+        - strike_received
+        - report_resolved
+
+    # ---------------------------------------------------------------- users
+    ApproximateLocation:
+      type: object
+      description: Coordenadas redondeadas a ≈ 1 km.
+      required: [latitude, longitude]
+      properties:
+        latitude: { type: number, example: 42.85 }
+        longitude: { type: number, example: -2.67 }
+    UserSummary:
+      type: object
+      required: [id, username]
+      properties:
+        id: { type: integer, example: 3 }
+        username: { type: string, example: Ane }
+        photo_url: { type: [string, 'null'], format: uri }
+    PublicUser:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          properties:
+            description: { type: [string, 'null'] }
+            languages: { type: array, items: { type: string }, example: [es, eu] }
+            average_rating: { type: [number, 'null'], example: 4.6 }
+            ratings_count: { type: integer, example: 5 }
+            exchanges_count: { type: integer, example: 7 }
+            member_since: { type: string, format: date-time }
+            blocked_by_me: { type: boolean, description: Solo si hay sesión iniciada. }
+    OwnUser:
+      allOf:
+        - $ref: '#/components/schemas/PublicUser'
+        - type: object
+          properties:
+            email: { type: string, format: email }
+            location: { oneOf: [{ $ref: '#/components/schemas/ApproximateLocation' }, { type: 'null' }] }
+            role: { $ref: '#/components/schemas/UserRole' }
+            privacy_accepted: { type: boolean }
+            postal_code: { type: [string, 'null'], pattern: '^[0-9]{5}$', example: '01005' }
+    ProfileInput:
+      type: object
+      properties:
+        username: { type: string, minLength: 2, maxLength: 60 }
+        description: { type: [string, 'null'], maxLength: 300 }
+        languages: { type: array, items: { type: string, minLength: 2, maxLength: 2 } }
+        location: { oneOf: [{ $ref: '#/components/schemas/ApproximateLocation' }, { type: 'null' }] }
+        postal_code: { type: [string, 'null'], pattern: '^[0-9]{5}$', example: '01005' }
+    AdminUser:
+      allOf:
+        - $ref: '#/components/schemas/UserSummary'
+        - type: object
+          properties:
+            email: { type: string, format: email }
+            status: { $ref: '#/components/schemas/UserStatus' }
+            role: { $ref: '#/components/schemas/UserRole' }
+            created_at: { type: string, format: date-time }
+            books_count: { type: integer }
+            average_rating: { type: [number, 'null'] }
+            strikes: { type: integer, minimum: 0, maximum: 3 }
+    AdminUserDetail:
+      allOf:
+        - $ref: '#/components/schemas/AdminUser'
+        - type: object
+          properties:
+            books: { type: array, items: { $ref: '#/components/schemas/Book' } }
+            offers: { type: array, items: { $ref: '#/components/schemas/Offer' } }
+            ratings: { type: array, items: { $ref: '#/components/schemas/Rating' } }
+            reports_received: { type: array, items: { $ref: '#/components/schemas/AdminReport' } }
+            actions:
+              type: array
+              description: Registro de acciones administrativas sobre la cuenta.
+              items: { $ref: '#/components/schemas/AdminAction' }
+    AdminAction:
+      type: object
+      properties:
+        action: { type: string, enum: [suspend_user, reactivate_user, hide_book, restore_book, validate_report, dismiss_report, auto_suspend] }
+        admin: { oneOf: [{ $ref: '#/components/schemas/UserSummary' }, { type: 'null' }] }
+        reason: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+
+    # ---------------------------------------------------------------- reference data
+    Category:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        name: { type: string, example: Novela }
+    Language:
+      type: object
+      properties:
+        code: { type: string, example: es }
+        name: { type: string, example: Castellano }
+    IsbnLookup:
+      type: object
+      required: [found]
+      properties:
+        found: { type: boolean }
+        isbn: { type: string, example: '9788420412146' }
+        title: { type: [string, 'null'], example: Cien años de soledad }
+        author: { type: [string, 'null'], example: Gabriel García Márquez }
+        publisher: { type: [string, 'null'] }
+        publication_year: { type: [integer, 'null'], example: 1967 }
+        page_count: { type: [integer, 'null'] }
+        cover_image_url: { type: [string, 'null'], format: uri }
+
+    # ---------------------------------------------------------------- books
+    BookInput:
+      type: object
+      required: [title, author, category_ids, language, binding_type, condition, is_donation]
+      properties:
+        isbn: { type: [string, 'null'], description: Vacío si se añade a mano (RF-08). }
+        title: { type: string, maxLength: 255 }
+        author: { type: string, maxLength: 255 }
+        publisher: { type: [string, 'null'], maxLength: 255 }
+        publication_year: { type: [integer, 'null'] }
+        publication_place: { type: [string, 'null'], maxLength: 255 }
+        edition_name: { type: [string, 'null'], maxLength: 255 }
+        page_count: { type: [integer, 'null'], minimum: 1 }
+        dimensions: { type: [string, 'null'], maxLength: 50, example: 21 x 14 cm }
+        weight: { type: [integer, 'null'], description: En gramos. }
+        cover_image_url: { type: [string, 'null'], format: uri }
+        category_ids: { type: array, minItems: 1, items: { type: integer } }
+        language: { type: string, minLength: 2, maxLength: 2, example: es }
+        binding_type: { $ref: '#/components/schemas/BindingType' }
+        condition: { $ref: '#/components/schemas/BookCondition' }
+        defects:
+          type: array
+          uniqueItems: true
+          items: { $ref: '#/components/schemas/Defect' }
+        is_donation:
+          type: boolean
+          description: '`false` = «Solo trueque»; `true` = «Trueque y donación» (RN-04).'
+        notes: { type: [string, 'null'], maxLength: 500 }
+    Book:
+      type: object
+      properties:
+        id: { type: integer, example: 42 }
+        isbn: { type: [string, 'null'] }
+        title: { type: string }
+        author: { type: string }
+        publisher: { type: [string, 'null'] }
+        publication_year: { type: [integer, 'null'] }
+        publication_place: { type: [string, 'null'] }
+        edition_name: { type: [string, 'null'] }
+        page_count: { type: [integer, 'null'] }
+        dimensions: { type: [string, 'null'] }
+        weight: { type: [integer, 'null'] }
+        cover_image_url: { type: [string, 'null'], format: uri }
+        categories: { type: array, items: { $ref: '#/components/schemas/Category' } }
+        language: { type: string }
+        binding_type: { $ref: '#/components/schemas/BindingType' }
+        condition: { $ref: '#/components/schemas/BookCondition' }
+        defects: { type: array, items: { $ref: '#/components/schemas/Defect' } }
+        is_donation: { type: boolean }
+        notes: { type: [string, 'null'] }
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              url: { type: string, format: uri }
+        status: { $ref: '#/components/schemas/BookStatus' }
+        distance_km:
+          type: [number, 'null']
+          description: Distancia aproximada al usuario. `null` para visitantes o sin ubicación.
+          example: 1.2
+        owner: { $ref: '#/components/schemas/PublicUser' }
+        is_mine: { type: boolean }
+        created_at: { type: string, format: date-time }
+    MapMarker:
+      type: object
+      properties:
+        book_id: { type: integer }
+        title: { type: string }
+        cover_image_url: { type: [string, 'null'], format: uri }
+        location: { $ref: '#/components/schemas/ApproximateLocation' }
+
+    # ---------------------------------------------------------------- offers, chat and ratings
+    OfferInput:
+      type: object
+      required: [type, requested_book_id]
+      properties:
+        type: { $ref: '#/components/schemas/OfferType' }
+        requested_book_id: { type: integer }
+        offered_book_id:
+          type: [integer, 'null']
+          description: Obligatorio si `type` es `trade`; vacío si es `donation`.
+        message: { type: [string, 'null'], maxLength: 500 }
+    Offer:
+      type: object
+      properties:
+        id: { type: integer, example: 15 }
+        type: { $ref: '#/components/schemas/OfferType' }
+        status: { $ref: '#/components/schemas/OfferStatus' }
+        requested_book: { $ref: '#/components/schemas/Book' }
+        offered_book: { oneOf: [{ $ref: '#/components/schemas/Book' }, { type: 'null' }] }
+        requester: { $ref: '#/components/schemas/UserSummary' }
+        owner: { $ref: '#/components/schemas/UserSummary' }
+        message: { type: [string, 'null'] }
+        counteroffer_made: { type: boolean }
+        delivery_confirmed_by_me: { type: boolean }
+        delivery_confirmed_by_other: { type: boolean }
+        chat_read_only: { type: boolean }
+        unread_messages: { type: integer }
+        can_rate: { type: boolean }
+        expires_at:
+          type: [string, 'null']
+          format: date-time
+          description: Fecha de caducidad si sigue pendiente o en contraoferta (RN-10).
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    Message:
+      type: object
+      properties:
+        id: { type: integer }
+        offer_id: { type: integer }
+        type: { $ref: '#/components/schemas/MessageType' }
+        payload: { type: [object, 'null'] }
+        sender: { oneOf: [{ $ref: '#/components/schemas/UserSummary' }, { type: 'null' }] }
+        body: { type: [string, 'null'] }
+        created_at: { type: string, format: date-time }
+    Rating:
+      type: object
+      properties:
+        id: { type: integer }
+        offer_id: { type: integer }
+        rater: { $ref: '#/components/schemas/UserSummary' }
+        score: { type: integer, minimum: 1, maximum: 5 }
+        comment: { type: [string, 'null'] }
+        is_published: { type: boolean, description: true cuando las dos partes han valorado (RN-13). }
+        created_at: { type: string, format: date-time }
+
+    # ---------------------------------------------------------------- notifications
+    Notification:
+      type: object
+      description: Notificación de Laravel (tabla `notifications`, id UUID).
+      properties:
+        id: { type: string, format: uuid }
+        type: { $ref: '#/components/schemas/NotificationType' }
+        text: { type: string, example: Ane quiere tu libro «Cien años de soledad». }
+        link:
+          type: object
+          description: A dónde lleva la notificación al pulsarla.
+          properties:
+            resource: { type: string, enum: [offer, chat, book, profile] }
+            id: { type: [integer, 'null'] }
+        read_at: { type: [string, 'null'], format: date-time }
+        created_at: { type: string, format: date-time }
+
+    # ---------------------------------------------------------------- reports
+    ReportInput:
+      type: object
+      required: [reported_user_id, reason]
+      properties:
+        reported_user_id: { type: integer }
+        reason: { $ref: '#/components/schemas/ReportReason' }
+        description:
+          type: [string, 'null']
+          maxLength: 1000
+          description: Obligatoria si el motivo es `other`.
+        offer_id:
+          type: [integer, 'null']
+          description: Solicitud o chat desde el que se denuncia (contexto opcional).
+    OwnReport:
+      type: object
+      description: Lo que ve el denunciante.
+      properties:
+        id: { type: integer }
+        reported_user: { $ref: '#/components/schemas/UserSummary' }
+        reason: { $ref: '#/components/schemas/ReportReason' }
+        status: { $ref: '#/components/schemas/ReportStatus' }
+        created_at: { type: string, format: date-time }
+    AdminReport:
+      type: object
+      properties:
+        id: { type: integer }
+        reporter: { $ref: '#/components/schemas/UserSummary' }
+        reported_user: { $ref: '#/components/schemas/AdminUser' }
+        reason: { $ref: '#/components/schemas/ReportReason' }
+        description: { type: [string, 'null'] }
+        offer_id: { type: [integer, 'null'] }
+        status: { $ref: '#/components/schemas/ReportStatus' }
+        resolution:
+          oneOf:
+            - type: 'null'
+            - type: object
+              properties:
+                admin: { $ref: '#/components/schemas/UserSummary' }
+                reason: { type: string }
+                strike_added: { type: boolean, description: false si ese denunciante ya había sumado un strike (RN-25). }
+                resolved_at: { type: string, format: date-time }
+        created_at: { type: string, format: date-time }
+
+    # ---------------------------------------------------------------- pagination
+    PaginationMeta:
+      type: object
+      properties:
+        current_page: { type: integer, example: 1 }
+        last_page: { type: integer, example: 5 }
+        per_page: { type: integer, example: 20 }
+        total: { type: integer, example: 93 }
+    PaginationLinks:
+      type: object
+      properties:
+        first: { type: [string, 'null'] }
+        last: { type: [string, 'null'] }
+        prev: { type: [string, 'null'] }
+        next: { type: [string, 'null'] }
+    PaginatedBooks:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Book' } }
+        links: { $ref: '#/components/schemas/PaginationLinks' }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+    PaginatedOffers:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Offer' } }
+        links: { $ref: '#/components/schemas/PaginationLinks' }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+    PaginatedMessages:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Message' } }
+        links: { $ref: '#/components/schemas/PaginationLinks' }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+    PaginatedRatings:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Rating' } }
+        links: { $ref: '#/components/schemas/PaginationLinks' }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+    PaginatedNotifications:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/Notification' } }
+        links: { $ref: '#/components/schemas/PaginationLinks' }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+    PaginatedAdminUsers:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/AdminUser' } }
+        links: { $ref: '#/components/schemas/PaginationLinks' }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
+    PaginatedReports:
+      type: object
+      properties:
+        data: { type: array, items: { $ref: '#/components/schemas/AdminReport' } }
+        links: { $ref: '#/components/schemas/PaginationLinks' }
+        meta: { $ref: '#/components/schemas/PaginationMeta' }
