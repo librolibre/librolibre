@@ -24,7 +24,7 @@ class ProfileTest extends TestCase
     }
 
     /** Running the seeder again (for example on Neon) must not duplicate rows. */
-    public function test_seeder_can_run_twice_without_duplicates(): void
+    public function test_profile_seeder_can_run_twice_without_duplicates(): void
     {
         $this->seed(ProfileSeeder::class);
         $this->seed(ProfileSeeder::class);
@@ -33,7 +33,7 @@ class ProfileTest extends TestCase
     }
 
     /** `code` is what the code compares against, so it can never repeat. */
-    public function test_code_must_be_unique(): void
+    public function test_profile_code_must_be_unique(): void
     {
         Profile::create(['code' => 'user', 'name' => 'Usuario']);
 
