@@ -9,13 +9,24 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable([
+    'username', 
+    'email', 
+    'google_id', 
+    'photo_path', 
+    'description', 
+    'postal_code', 
+    'latitude', 
+    'longitude', 
+    'privacy_accepted_at'
+    ])]
+#[Hidden(['google_id'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * Get the attributes that should be cast.
@@ -25,8 +36,9 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'privacy_accepted_at' => 'datetime',
+            'latitude' => 'decimal:2',
+            'longitude' => 'decimal:2',
         ];
     }
 }
