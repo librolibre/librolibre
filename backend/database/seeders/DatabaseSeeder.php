@@ -20,6 +20,9 @@ class DatabaseSeeder extends Seeder
         $this->call(CategorySeeder::class);
         $this->call(DefectSeeder::class);
         $this->call(BindingTypeSeeder::class);
+        $this->call(BookConditionSeeder::class);
+        $this->call(OfferStatusSeeder::class);
+        $this->call(ReportReasonSeeder::class);
 
         User::factory()->create([
             'username' => 'testuser',
