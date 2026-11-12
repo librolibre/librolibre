@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 #[Fillable(['code', 'name'])]
 class Category extends Model
 {
-    // public function book(): BelongsToMany
+    // public function books(): BelongsToMany
     // {
     //     return $this->belongsToMany(Book::class);
     // }

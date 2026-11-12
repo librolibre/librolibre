@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call(ProfileSeeder::class);
         $this->call(LanguageSeeder::class);
         $this->call(CategorySeeder::class);
+        $this->call(DefectSeeder::class);
 
         User::factory()->create([
             'username' => 'testuser',
