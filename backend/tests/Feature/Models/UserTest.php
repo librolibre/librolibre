@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Models\Language;
 use App\Models\Profile;
 use App\Models\User;
 use Carbon\CarbonInterface;
@@ -159,5 +160,43 @@ class UserTest extends TestCase
 
         $this->assertInstanceOf(Profile::class, $user->profile);
         $this->assertSame($user->profile_id, $user->profile->id);
+    }
+
+    /** Attaching from the language side writes the row in language_user that User::languages() reads. */
+    public function test_user_belongs_to_many_languages(): void
+    {
+        $user = User::factory()->create();
+        $language = Language::create(['code' => 'es', 'name' => 'Español']);
+
+        $language->users()->attach($user);
+
+        $this->assertTrue($user->languages->contains($language));
+    }
+
+    /** The composite primary key stops the same user–language pair being saved twice. */
+    public function test_user_cannot_be_linked_to_the_same_language_twice(): void
+    {
+        $user = User::factory()->create();
+        $language = Language::create(['code' => 'es', 'name' => 'Español']);
+        $language->users()->attach($user);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        $language->users()->attach($user);
+    }
+
+    /** Deleting a user also deletes their language links (cascade on user_id). */
+    public function test_deleting_user_removes_their_language_links(): void
+    {
+        $user = User::factory()->create();
+        $language = Language::create(['code' => 'es', 'name' => 'Español']);
+
+        $user->languages()->attach($language);
+        $user->delete();
+
+        $this->assertDatabaseMissing('language_user', [
+            'user_id' => $user->id,
+            'language_id' => $language->id,
+        ]);
     }
 }

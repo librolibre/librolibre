@@ -4,6 +4,7 @@ namespace Tests\Feature\Models;
 
 // use App\Models\Book;
 use App\Models\Language;
+use App\Models\User;
 use Database\Seeders\LanguageSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,4 +69,42 @@ class LanguageTest extends TestCase
 
     //     $this->assertTrue($language->books->contains($book));
     // }
+
+    /** Attaching from the user side writes the row in language_user that Language::users() reads. */
+    public function test_language_belongs_to_many_users(): void
+    {
+        $language = Language::create(['code' => 'es', 'name' => 'Español']);
+        $user = User::factory()->create();
+
+        $user->languages()->attach($language);
+
+        $this->assertTrue($language->users->contains($user));
+    }
+
+    /** The composite primary key stops the same user–language pair being saved twice. */
+    public function test_language_cannot_be_linked_to_the_same_user_twice(): void
+    {
+        $language = Language::create(['code' => 'es', 'name' => 'Español']);
+        $user = User::factory()->create();
+        $user->languages()->attach($language);
+
+        $this->expectException(UniqueConstraintViolationException::class);
+
+        $user->languages()->attach($language);
+    }
+
+    /** Deleting a language also deletes its links to users (cascade on language_id). */
+    public function test_deleting_language_removes_its_user_links(): void
+    {
+        $language = Language::create(['code' => 'es', 'name' => 'Español']);
+        $user = User::factory()->create();
+
+        $language->users()->attach($user);
+        $language->delete();
+
+        $this->assertDatabaseMissing('language_user', [
+            'user_id' => $user->id,
+            'language_id' => $language->id,
+        ]);
+    }
 }

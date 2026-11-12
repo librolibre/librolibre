@@ -9,9 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 #[Fillable(['code', 'name'])]
 class Language extends Model
 {
-
-    // public function users(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(User::class);
-    // }
+    public function users(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class);
+    }
 }

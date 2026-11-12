@@ -49,8 +49,8 @@ class User extends Authenticatable
         return $this->belongsTo(Profile::class);
     }
 
-    // public function languages(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(Language::class);
-    // }
+    public function languages(): BelongsToMany
+    {
+        return $this->belongsToMany(Language::class);
+    }
 }
