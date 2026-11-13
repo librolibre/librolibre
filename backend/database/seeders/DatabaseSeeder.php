@@ -24,9 +24,12 @@ class DatabaseSeeder extends Seeder
         $this->call(OfferStatusSeeder::class);
         $this->call(ReportReasonSeeder::class);
 
-        User::factory()->create([
-            'username' => 'testuser',
-            'email' => 'test@example.com',
-        ]);
+        // Fake user only on your machine, never on Neon (dev/production)
+        if (app()->isLocal()) {
+            User::factory()->create([
+                'username' => 'testuser',
+                'email' => 'test@example.com',
+            ]);
+        }
     }
 }
