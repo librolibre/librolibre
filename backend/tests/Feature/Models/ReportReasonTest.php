@@ -3,6 +3,7 @@
 namespace Tests\Feature\Models;
 
 use App\Models\ReportReason;
+use App\Models\UserReport;
 use Database\Seeders\ReportReasonSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -77,11 +78,11 @@ class ReportReasonTest extends TestCase
     // Relationships
     // ------------------------------------------------------------------
 
-    // public function test_report_reason_has_many_user_reports(): void
-    // {
-    //     $reason = ReportReason::create(['code' => 'spam', 'name' => 'Spam']);
-    //     $report = UserReport::factory()->create(['reason_id' => $reason->id]);
+    public function test_report_reason_has_many_user_reports(): void
+    {
+        $reason = ReportReason::create(['code' => 'spam', 'name' => 'Spam']);
+        $report = UserReport::factory()->create(['reason_id' => $reason->id]);
 
-    //     $this->assertTrue($reason->userReports->contains($report));
-    // }
+        $this->assertTrue($reason->userReports->contains($report));
+    }
 }

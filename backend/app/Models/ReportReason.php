@@ -22,8 +22,8 @@ class ReportReason extends Model
     }
 
     // The column on user_reports is `reason_id`, not `report_reason_id`, so it is given explicitly.
-    // public function userReports(): HasMany
-    // {
-    //     return $this->hasMany(UserReport::class, 'reason_id');
-    // }
+    public function userReports(): HasMany
+    {
+        return $this->hasMany(UserReport::class, 'reason_id');
+    }
 }

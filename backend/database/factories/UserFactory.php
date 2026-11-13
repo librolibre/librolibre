@@ -36,7 +36,7 @@ class UserFactory extends Factory
     }
 
     /**
-     * Deprecated:Indicate that the model's email address should be unverified.
+     * Deprecado:Indicate that the model's email address should be unverified.
      */
     // public function unverified(): static
     // {
