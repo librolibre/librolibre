@@ -1,14 +1,32 @@
 # LibroLibre · Back end (API Laravel)
 
-API REST de LibroLibre construida con **Laravel 13**, **Sanctum** (tokens), **Scramble** (documentación OpenAPI) y **PostgreSQL 18**. En local se ejecuta con **Laravel Sail** (Docker), así que no hace falta instalar PostgreSQL en tu equipo.
+API REST de LibroLibre construida con **Laravel 13**, **Sanctum** (tokens), **Scramble** (documentación OpenAPI) y **PostgreSQL 18**. En local se trabaja con PHP y PostgreSQL instalados en tu equipo.
 
 ## Requisitos
 
 | Herramienta | Versión | Para qué |
 |---|---|---|
-| Docker | Docker Desktop, OrbStack o Docker Engine | Ejecutar Sail (PHP 8.5 + PostgreSQL 18) |
+| PHP | ≥ 8.4 con la extensión `pdo_pgsql` | Ejecutar Laravel |
+| Composer | 2.x | Instalar dependencias |
+| PostgreSQL | 18 | Base de datos local (desarrollo y tests) |
 | Git | cualquiera reciente | Clonar el repositorio |
-| PHP + Composer | PHP ≥ 8.4 *(opcional)* | Solo para el primer `composer install`; hay alternativa sin PHP más abajo |
+
+## Bases de datos: local y Neon
+
+> ⚠️ **Para trabajar, usa siempre tu PostgreSQL local.** Neon (`dev` y `production`) es la base de datos de los entornos desplegados, no la de tu rama.
+
+| Base de datos | Dónde | Para qué |
+|---|---|---|
+| `librolibre` | Tu equipo (`127.0.0.1`) | Desarrollo: `php artisan serve`, `migrate:fresh --seed` |
+| `testing` | Tu equipo (`127.0.0.1`) | `php artisan test` (los tests la vacían cada vez) |
+| Neon `dev` | Neon | Entorno de desarrollo desplegado. Solo se migra desde `develop` |
+| Neon `production` | Neon | Producción (Heroku la migra en cada despliegue) |
+
+Reglas:
+- **Nunca** pongas los datos de conexión de Neon en `.env` ni en `.env.testing` para trabajar en una rama.
+- **Nunca** ejecutes `migrate:fresh`, `migrate:reset`, `migrate:rollback` ni `db:wipe` contra Neon: borran datos.
+- Una migración que ya se ha ejecutado en Neon **no se cambia, no se renombra y no se borra**: se crea una migración nueva.
+- El esquema de la base de datos son las **migraciones** (`database/migrations`); no se cambian tablas a mano en Neon.
 
 ## Instalación (primera vez)
 
@@ -18,86 +36,71 @@ Todos los comandos se ejecutan desde la carpeta `backend/`.
 git clone https://github.com/librolibre/librolibre.git
 cd librolibre/backend
 cp .env.example .env
-```
-
-Instala las dependencias. **Con PHP en tu equipo:**
-
-```bash
+cp .env.testing.example .env.testing
 composer install
 ```
 
-**Sin PHP en tu equipo** (usa un contenedor temporal):
+Crea las dos bases de datos locales:
 
 ```bash
-docker run --rm -u "$(id -u):$(id -g)" -v "$(pwd):/var/www/html" -w /var/www/html laravelsail/php85-composer:latest composer install --ignore-platform-reqs
+createdb librolibre
+createdb testing
 ```
 
-Arranca los contenedores y prepara la aplicación:
+Edita `.env` y `.env.testing`: pon tu usuario de PostgreSQL en `DB_USERNAME` (y `DB_PASSWORD` si tiene). Después:
 
 ```bash
-./vendor/bin/sail up -d
-./vendor/bin/sail artisan key:generate
-./vendor/bin/sail artisan migrate
-./vendor/bin/sail artisan test
+php artisan key:generate
+php artisan key:generate --env=testing
+php artisan migrate --seed
+php artisan test
 ```
-
-La primera vez `sail up` tarda varios minutos porque construye la imagen.
 
 ### Comprobar que funciona
 
+```bash
+php artisan serve
+```
+
 | URL | Resultado esperado |
 |---|---|
-| http://localhost/api/health | `{"status":"ok"}` |
-| http://localhost/docs/api | Documentación de la API (Scramble) |
+| http://localhost:8000/api/health | `{"status":"ok"}` |
+| http://localhost:8000/docs/api | Documentación de la API (Scramble) |
 
 ## Uso diario
 
 ```bash
-./vendor/bin/sail up -d        # arrancar
-./vendor/bin/sail artisan test # tests
-./vendor/bin/sail stop         # parar (los datos de la BD se conservan)
-```
-
-**Opcional:** para no escribir `./vendor/bin/sail` cada vez, puedes añadir este alias a tu `~/.zshrc` o `~/.bashrc`. Si no lo usas, sigue escribiendo `./vendor/bin/sail` como en los ejemplos.
-
-```bash
-alias sail='sh $([ -f sail ] && echo sail || echo vendor/bin/sail)'
+php artisan serve                 # arrancar la API en http://localhost:8000
+php artisan test                  # tests
+php artisan migrate:fresh --seed  # rehacer la base de datos LOCAL desde cero
 ```
 
 ## Notas por sistema operativo
 
 ### macOS
-- Instala Docker Desktop u OrbStack y ábrelo antes de `sail up`.
-- PHP es opcional; si lo quieres: `brew install php composer`.
+```bash
+brew install php composer postgresql@18
+brew services start postgresql@18
+echo 'export PATH="/opt/homebrew/opt/postgresql@18/bin:$PATH"' >> ~/.zshrc
+```
+Con Homebrew, el usuario de PostgreSQL es tu usuario de macOS y no tiene contraseña.
 
 ### Ubuntu
-- Instala Docker Engine y el plugin de Compose siguiendo la guía oficial de Docker.
-- Añade tu usuario al grupo `docker` para no usar `sudo`, y cierra sesión para aplicarlo:
-  ```bash
-  sudo usermod -aG docker $USER
-  ```
+- Instala PHP 8.4+ con `php-pgsql`, Composer y PostgreSQL 18 (repositorio oficial de PostgreSQL).
+- Crea un usuario de PostgreSQL con tu nombre de usuario: `sudo -u postgres createuser --superuser $USER`.
 
 ### Windows 10 / 11 (WSL2 obligatorio)
-- Instala WSL2 con Ubuntu (`wsl --install` en PowerShell como administrador) y Docker Desktop con la integración WSL2 activada para esa distribución.
-- **Clona el repositorio dentro de WSL** (por ejemplo en `~/proyectos`), **no** en `C:\` ni en `/mnt/c/...`: el rendimiento es muy malo y los permisos fallan.
-- Ejecuta todos los comandos desde la terminal de Ubuntu (WSL). Puedes abrir el proyecto con `code .` desde WSL.
+- Instala WSL2 con Ubuntu (`wsl --install` en PowerShell como administrador) y sigue los pasos de Ubuntu **dentro de WSL**.
+- **Clona el repositorio dentro de WSL** (por ejemplo en `~/proyectos`), **no** en `C:\` ni en `/mnt/c/...`.
 
 ## Problemas frecuentes
 
-- **El puerto 80 o 5432 ya está en uso** (otro servidor web, XAMPP, otro PostgreSQL u otro proyecto Docker): cambia los puertos en tu `.env` y reinicia Sail.
-  ```dotenv
-  APP_PORT=8080
-  FORWARD_DB_PORT=54320
-  ```
-  Si cambias `APP_PORT`, la API pasa a estar en `http://localhost:8080`.
-- **Error de autenticación con PostgreSQL** después de cambiar `DB_DATABASE`, `DB_USERNAME` o `DB_PASSWORD`: el volumen de la base de datos se creó con los valores anteriores. Bórralo y vuelve a crearlo (**se pierden los datos locales**):
-  ```bash
-  ./vendor/bin/sail down -v
-  ./vendor/bin/sail up -d
-  ./vendor/bin/sail artisan migrate
-  ```
+- **`could not find driver`**: falta la extensión `pdo_pgsql` de PHP. Comprueba con `php -m | grep pgsql`.
+- **`database "librolibre" does not exist`**: falta `createdb librolibre` (o `createdb testing` para los tests).
+- **`No application encryption key has been specified`** en los tests: falta `php artisan key:generate --env=testing`.
+- **`relation "…" already exists`** al migrar en local: tu base de datos tiene tablas de una versión anterior. Ejecuta `php artisan migrate:fresh --seed` (solo en local).
 
 ## Notas
 
-- **Nunca subas el archivo `.env`** ni cadenas de conexión de Neon. `.env.example` solo contiene valores por defecto de Sail.
-- Los tests usan la base de datos `testing`, que Sail crea automáticamente.
+- **Nunca subas `.env` ni `.env.testing`** ni cadenas de conexión de Neon. Los ficheros `.example` solo tienen valores de ejemplo.
+- Los tests usan la base de datos local `testing`; `phpunit.xml` lo fuerza aunque `.env` apunte a otra.
