@@ -15,11 +15,21 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $this->call(ProfileSeeder::class);
+        $this->call(LanguageSeeder::class);
+        $this->call(CategorySeeder::class);
+        $this->call(DefectSeeder::class);
+        $this->call(BindingTypeSeeder::class);
+        $this->call(BookConditionSeeder::class);
+        $this->call(OfferStatusSeeder::class);
+        $this->call(ReportReasonSeeder::class);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
-        ]);
+        // Fake user only on your machine, never on Neon (dev/production)
+        if (app()->isLocal()) {
+            User::factory()->create([
+                'username' => 'testuser',
+                'email' => 'test@example.com',
+            ]);
+        }
     }
 }
