@@ -9,6 +9,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // reporter_user_id, status, strike_added and the resolution fields are set by our code.
+/**
+ * @property-read User $reporter
+ * @property-read User $reported
+ * @property-read User|null $resolver
+ * @property-read Offer|null $offer
+ * @property-read ReportReason $reason
+ */
 #[Fillable([
     'reported_user_id',
     'offer_id',

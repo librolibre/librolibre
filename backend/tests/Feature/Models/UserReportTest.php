@@ -170,6 +170,6 @@ class UserReportTest extends TestCase
         ]);
         $report = UserReport::factory()->resolved()->create(['resolved_by' => $admin->id]);
 
-        $this->assertTrue($report->resolver->is($admin));
+        $this->assertTrue($admin->is($report->resolver));
     }
 }
