@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -52,5 +53,22 @@ class User extends Authenticatable
     public function languages(): BelongsToMany
     {
         return $this->belongsToMany(Language::class);
+    }
+
+    public function books(): HasMany
+    {
+        return $this->hasMany(Book::class);
+    }
+
+    // Offers this user has sent
+    public function offers(): HasMany
+    {
+        return $this->hasMany(Offer::class, 'requester_id');
+    }
+
+    // Users this user has blocked
+    public function blockedUsers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'blocks', 'user_blocker_id', 'user_blocked_id')->withTimestamps();
     }
 }

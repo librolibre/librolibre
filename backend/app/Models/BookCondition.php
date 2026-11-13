@@ -10,8 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class BookCondition extends Model
 {
     // The column on books is `condition_id`, not `book_condition_id`, so it is given explicitly.
-    // public function books(): HasMany
-    // {
-    //     return $this->hasMany(Book::class, 'condition_id');
-    // }
+    public function books(): HasMany
+    {
+        return $this->hasMany(Book::class, 'condition_id');
+    }
 }

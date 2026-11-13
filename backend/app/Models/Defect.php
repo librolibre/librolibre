@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 #[Fillable(['code', 'name'])]
 class Defect extends Model
 {
-    // public function books(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(Book::class);
-    // }
+    public function books(): BelongsToMany
+    {
+        return $this->belongsToMany(Book::class);
+    }
 }

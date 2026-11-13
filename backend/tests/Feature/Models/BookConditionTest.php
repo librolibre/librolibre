@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Models\Book;
 use App\Models\BookCondition;
 use Database\Seeders\BookConditionSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -57,11 +58,11 @@ class BookConditionTest extends TestCase
     // Relationships
     // ------------------------------------------------------------------
 
-    // public function test_book_condition_has_many_books(): void
-    // {
-    //     $condition = BookCondition::create(['code' => 'new', 'name' => 'Nuevo']);
-    //     $book = Book::factory()->create(['condition_id' => $condition->id]);
+    public function test_book_condition_has_many_books(): void
+    {
+        $condition = BookCondition::create(['code' => 'new', 'name' => 'Nuevo']);
+        $book = Book::factory()->create(['condition_id' => $condition->id]);
 
-    //     $this->assertTrue($condition->books->contains($book));
-    // }
+        $this->assertTrue($condition->books->contains($book));
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Models\Book;
 use App\Models\Category;
 use Database\Seeders\CategorySeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -61,12 +62,29 @@ class CategoryTest extends TestCase
     // Relationships
     // ------------------------------------------------------------------
 
-    // public function test_category_has_many_books(): void
-    // {
-    //     $category = Category::create(['code' => 'novel', 'name' => 'Novela']);
-    //     $book = Book::factory()->create();
-    //     $book->categories()->attach($category);
+    /** Attaching from the book side writes the row in book_category that Category::books() reads. */
+    public function test_category_belongs_to_many_books(): void
+    {
+        $category = Category::create(['code' => 'novel', 'name' => 'Novela']);
+        $book = Book::factory()->create();
 
-    //     $this->assertTrue($category->books->contains($book));
-    // }
+        $book->categories()->attach($category);
+
+        $this->assertTrue($category->books->contains($book));
+    }
+
+    /** Deleting a category also deletes its links to books (cascade on category_id). */
+    public function test_deleting_category_removes_its_book_links(): void
+    {
+        $category = Category::create(['code' => 'novel', 'name' => 'Novela']);
+        $book = Book::factory()->create();
+
+        $category->books()->attach($book);
+        $category->delete();
+
+        $this->assertDatabaseMissing('book_category', [
+            'book_id' => $book->id,
+            'category_id' => $category->id,
+        ]);
+    }
 }

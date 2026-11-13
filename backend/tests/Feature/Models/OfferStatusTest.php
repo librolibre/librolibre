@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Models\Offer;
 use App\Models\OfferStatus;
 use Database\Seeders\OfferStatusSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -57,11 +58,11 @@ class OfferStatusTest extends TestCase
     // Relationships
     // ------------------------------------------------------------------
 
-    // public function test_offer_status_has_many_offers(): void
-    // {
-    //     $status = OfferStatus::create(['code' => 'pending', 'name' => 'Pendiente']);
-    //     $offer = Offer::factory()->create(['offer_status_id' => $status->id]);
+    public function test_offer_status_has_many_offers(): void
+    {
+        $status = OfferStatus::create(['code' => 'pending', 'name' => 'Pendiente']);
+        $offer = Offer::factory()->create(['offer_status_id' => $status->id]);
 
-    //     $this->assertTrue($status->offers->contains($offer));
-    // }
+        $this->assertTrue($status->offers->contains($offer));
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Models\Book;
 use App\Models\Defect;
 use Database\Seeders\DefectSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -53,5 +54,35 @@ class DefectTest extends TestCase
         $this->expectException(UniqueConstraintViolationException::class);
 
         Defect::create(['code' => 'underlining2', 'name' => 'Subrayado o resaltado']);
+    }
+
+    // ------------------------------------------------------------------
+    // Relationships
+    // ------------------------------------------------------------------
+
+    /** Attaching from the book side writes the row in book_defect that Defect::books() reads. */
+    public function test_defect_belongs_to_many_books(): void
+    {
+        $defect = Defect::create(['code' => 'underlining', 'name' => 'Subrayado o resaltado']);
+        $book = Book::factory()->create();
+
+        $book->defects()->attach($defect);
+
+        $this->assertTrue($defect->books->contains($book));
+    }
+
+    /** Deleting a defect also deletes its links to books (cascade on defect_id). */
+    public function test_deleting_defect_removes_its_book_links(): void
+    {
+        $defect = Defect::create(['code' => 'underlining', 'name' => 'Subrayado o resaltado']);
+        $book = Book::factory()->create();
+
+        $defect->books()->attach($book);
+        $defect->delete();
+
+        $this->assertDatabaseMissing('book_defect', [
+            'book_id' => $book->id,
+            'defect_id' => $defect->id,
+        ]);
     }
 }

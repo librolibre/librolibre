@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Models;
 
+use App\Models\Book;
 use App\Models\BindingType;
 use Database\Seeders\BindingTypeSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -57,11 +58,11 @@ class BindingTypeTest extends TestCase
     // Relationships
     // ------------------------------------------------------------------
 
-    // public function test_binding_type_has_many_books(): void
-    // {
-    //     $bindingType = BindingType::create(['code' => 'paperback', 'name' => 'Tapa blanda']);
-    //     $book = Book::factory()->create(['binding_type_id' => $bindingType->id]);
+    public function test_binding_type_has_many_books(): void
+    {
+        $bindingType = BindingType::create(['code' => 'paperback', 'name' => 'Tapa blanda']);
+        $book = Book::factory()->create(['binding_type_id' => $bindingType->id]);
 
-    //     $this->assertTrue($bindingType->books->contains($book));
-    // }
+        $this->assertTrue($bindingType->books->contains($book));
+    }
 }

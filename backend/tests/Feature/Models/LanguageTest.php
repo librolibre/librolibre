@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Models;
 
-// use App\Models\Book;
+use App\Models\Book;
 use App\Models\Language;
 use App\Models\User;
 use Database\Seeders\LanguageSeeder;
@@ -62,13 +62,13 @@ class LanguageTest extends TestCase
     // Relationships
     // ------------------------------------------------------------------
 
-    // public function test_language_has_many_books(): void
-    // {
-    //     $language = Language::create(['code' => 'es', 'name' => 'Español']);
-    //     $book = Book::factory()->create(['language_id' => $language->id]);
+    public function test_language_has_many_books(): void
+    {
+        $language = Language::create(['code' => 'es', 'name' => 'Español']);
+        $book = Book::factory()->create(['language_id' => $language->id]);
 
-    //     $this->assertTrue($language->books->contains($book));
-    // }
+        $this->assertTrue($language->books->contains($book));
+    }
 
     /** Attaching from the user side writes the row in language_user that Language::users() reads. */
     public function test_language_belongs_to_many_users(): void

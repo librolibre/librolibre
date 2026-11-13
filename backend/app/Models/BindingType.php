@@ -9,8 +9,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['code', 'name'])]
 class BindingType extends Model
 {
-    // public function books(): HasMany
-    // {
-    //     return $this->hasMany(Book::class);
-    // }
+    public function books(): HasMany
+    {
+        return $this->hasMany(Book::class);
+    }
 }
