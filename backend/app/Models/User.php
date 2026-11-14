@@ -71,4 +71,20 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(User::class, 'blocks', 'user_blocker_id', 'user_blocked_id')->withTimestamps();
     }
+
+    // Ratings other users have given to this user
+    public function ratingsReceived(): HasMany
+    {
+        return $this->hasMany(Rating::class, 'user_rated_id');
+    }
+
+    // Completed exchanges, as requester or as owner of the requested book
+    public function completedExchangesCount(): int
+    {
+        return Offer::whereHas('status', fn ($query) => $query->where('code', 'completed'))
+            ->where(fn ($query) => $query
+                ->where('requester_id', $this->id)
+                ->orWhereHas('requestedBook', fn ($book) => $book->where('user_id', $this->id)))
+            ->count();
+    }
 }

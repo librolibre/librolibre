@@ -125,6 +125,20 @@ class GoogleLoginTest extends TestCase
         ]);
     }
 
+    /** The user in the token response has the same shape as GET /me (OwnUser), not the raw model. */
+    public function test_token_response_returns_own_user_shape(): void
+    {
+        $user = User::factory()->create();
+        Cache::put('login-code:test-code', $user->id, 60);
+
+        $response = $this->postJson('/api/auth/token', ['code' => 'test-code']);
+
+        $response->assertJsonPath('user.role', 'user');
+        $response->assertJsonPath('user.privacy_accepted', false);
+        $response->assertJsonMissingPath('user.status');
+        $response->assertJsonMissingPath('user.data');
+    }
+
     public function test_code_can_only_be_used_once(): void
     {
         $user = User::factory()->create();
@@ -160,12 +174,14 @@ class GoogleLoginTest extends TestCase
         $token = $user->createToken('google-login')->plainTextToken;
 
         // The token works on the day it is created
-        $this->withToken($token)->getJson('/api/user')->assertOk();
+        // $this->withToken($token)->getJson('/api/user')->assertOk();
+        $this->withToken($token)->getJson('/api/me')->assertOk();
 
         // Laravel remembers the logged-in user between requests in a test
         $this->app['auth']->forgetGuards();
         $this->travel(31)->days();
 
-        $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
+        // $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
+        $this->withToken($token)->getJson('/api/me')->assertUnauthorized();
     }
 }

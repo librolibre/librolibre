@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\OwnUserResource;
 use App\Models\Profile;
 use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
@@ -108,7 +109,7 @@ class GoogleAuthController extends Controller
         return response()->json([
             'token' => $token,
             'is_new_user' => $isNewUser,
-            'user' => $user,
+            'user' => new OwnUserResource($user),
         ]);
     }
 }
