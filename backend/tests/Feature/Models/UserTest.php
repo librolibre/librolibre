@@ -57,12 +57,8 @@ class UserTest extends TestCase
     public function test_username_is_not_unique(): void
     {
         User::factory()->create(['username' => 'ane']);
-
-        // $this->expectException(UniqueConstraintViolationException::class);
-
         User::factory()->create(['username' => 'ane']);
 
-        // $this->assertDatabaseHas();
         $this->assertSame(2, User::where('username', 'ane')->count());
     }
 
