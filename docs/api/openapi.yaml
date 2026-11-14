@@ -83,38 +83,7 @@ paths:
                   status: { type: string, example: ok }
 
   # ------------------------------------------------------------------ Auth
-  # /auth/google/redirect y /auth/google/callback ya están programados: los documenta Scramble (#23).
-  # /auth/token sigue aquí hasta que `user` use el formato OwnUser (UserResource, #27).
-  /auth/token:
-    post:
-      tags: [Auth]
-      summary: Canjear el código de un solo uso por un token
-      description: |
-        El código solo sirve una vez y caduca a los 60 segundos. Si `is_new_user` es `true`, el front end
-        pide aceptar la política de privacidad y poder guardar la zona con el código postal. 
-      security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [code]
-              properties:
-                code: { type: string }
-      responses:
-        '200':
-          description: Sesión iniciada.
-          content:
-            application/json:
-              schema:
-                type: object
-                required: [token, is_new_user, user]
-                properties:
-                  token: { type: string, example: '1|aBcD…' }
-                  is_new_user: { type: boolean }
-                  user: { $ref: '#/components/schemas/OwnUser' }
-        '422': { $ref: '#/components/responses/ValidationFailed' }
+  # /auth/google/redirect, /auth/google/callback y /auth/token ya están programados: los documenta Scramble (#23, #27).
   /auth/logout:
     post:
       tags: [Auth]
@@ -126,12 +95,7 @@ paths:
 
   # ------------------------------------------------------------------ Profile
   /me:
-    get:
-      tags: [Profile]
-      summary: Obtener mi perfil
-      responses:
-        '200': { $ref: '#/components/responses/OwnUserOk' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
+    # GET /me ya está programado: lo documenta Scramble (#27).
     patch:
       tags: [Profile]
       summary: Editar mi perfil
