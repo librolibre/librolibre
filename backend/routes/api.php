@@ -11,3 +11,4 @@ Route::get('/user', function (Request $request) {
 Route::get('/health', fn () => ['status' => 'ok']);
 
 Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);

@@ -2,6 +2,9 @@
 
 namespace Tests\Feature\Api\Auth;
 
+use App\Models\Profile;
+use App\Models\User;
+use Database\Seeders\ProfileSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 // use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Socialite;
@@ -14,9 +17,6 @@ class GoogleLoginTest extends TestCase
 
     public function test_redirect_sends_user_to_google(): void
     {
-        // test('user is redirected to google', function () {
-        //     Socialite::fake('google');
-        // });
         Socialite::fake('google');
 
         $response = $this->get('/api/auth/google/redirect');
@@ -26,12 +26,25 @@ class GoogleLoginTest extends TestCase
 
     public function test_callback_creates_new_user_and_redirects_with_code(): void
     {
-        // $user = Socialite::fake('google', (new SocialiteUser)->map([
+        $this->seed(ProfileSeeder::class);
+
         Socialite::fake('google', (new SocialiteUser)->map([
             'id' => '123456789',
             'email' => 'ane@example.com',
-            'name' => 'Ane',
-        ]));
+            'name' => 'Ane Igartiburu',
+            'avatar' => 'https://photo_path'
+        ])->setRaw(['given_name' => 'Ane']));
+
+        $response = $this->get('/api/auth/google/callback');
+
+        $response->assertRedirectContains(config('app.frontend_url').'/auth/callback?code=');
+        $this->assertDatabaseHas('users', [
+            'google_id' => '123456789',
+            'email' => 'ane@example.com',
+            'username' => 'Ane',
+            'status' => 'active',
+            'privacy_accepted_at' => null
+        ]);
     }
 
     public function test_callback_finds_existing_user_by_google_id(): void
