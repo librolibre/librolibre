@@ -2,11 +2,9 @@
 
 namespace Tests\Feature\Api\Auth;
 
-use App\Models\Profile;
 use App\Models\User;
 use Database\Seeders\ProfileSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-// use Illuminate\Support\Facades\Route;
 use Laravel\Socialite\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\TestCase;
@@ -48,13 +46,64 @@ class GoogleLoginTest extends TestCase
     }
 
     public function test_callback_finds_existing_user_by_google_id(): void
-    {}
+    {
+        $this->seed(ProfileSeeder::class);
+
+        $user = User::factory()->create(['google_id' => '123456789', 'username' => 'Ane la de los libros']);
+        Socialite::fake('google', (new SocialiteUser)->map([
+            'id' => '123456789',
+            'email' => 'ane@example.com',
+            'name' => 'Ane Igartiburu',
+            'avatar' => 'https://photo_path'
+        ])->setRaw(['given_name' => 'Ane']));
+
+        $response = $this->get('/api/auth/google/callback');
+        $response->assertRedirectContains(config('app.frontend_url').'/auth/callback?code=');
+
+        $this->assertDatabaseCount('users', 1);
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'username' => 'Ane la de los libros',
+        ]);
+    }
 
     public function test_callback_redirects_with_error_when_user_cancels(): void
-    {}
+    {
+        $this->seed(ProfileSeeder::class);
+
+        Socialite::fake('google', (new SocialiteUser)->map([
+            'id' => '123456789',
+            'email' => 'ane@example.com',
+            'name' => 'Ane Igartiburu',
+            'avatar' => 'https://photo_path'
+        ])->setRaw(['given_name' => 'Ane']));
+
+        $response = $this->get('/api/auth/google/callback?error=access_denied');
+
+        $response->assertRedirect(config('app.frontend_url').'/?error=cancelled');
+        $this->assertDatabaseCount('users', 0);
+    }
 
     public function test_suspended_user_is_redirected_with_error(): void
-    {}
+    {
+        $this->seed(ProfileSeeder::class);
+
+        $user = User::factory()->create(['google_id' => '123456789', 'status' => 'suspended']);
+        Socialite::fake('google', (new SocialiteUser)->map([
+            'id' => '123456789',
+            'email' => 'ane@example.com',
+            'name' => 'Ane Igartiburu',
+            'avatar' => 'https://photo_path'
+        ])->setRaw(['given_name' => 'Ane']));
+
+        $response = $this->get('/api/auth/google/callback');
+
+        $response->assertRedirect(config('app.frontend_url').'/?error=suspended');
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'status' => 'suspended',
+        ]);
+    }
 
     public function test_code_can_be_exchanged_for_token(): void
     {}

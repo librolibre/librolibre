@@ -7,6 +7,7 @@ use App\Models\Profile;
 use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Laravel\Socialite\Socialite;
@@ -36,14 +37,17 @@ class GoogleAuthController extends Controller
      *
      * @unauthenticated
      */
-    public function callback(): RedirectResponse
+    public function callback(Request $request): RedirectResponse
     {
+        if ($request->has('error')) {
+            return redirect()->away(config('app.frontend_url').'/?error=cancelled');
+        }
+
         /** @var \Laravel\Socialite\Two\GoogleProvider $google */
         $google = Socialite::driver('google');
         /** @var \Laravel\Socialite\Two\User $googleUser */
         $googleUser = $google->stateless()->user();
 
-        // The second array is only used when the user is new
         $user = User::firstOrNew(
             ['google_id' => $googleUser->getId()],
             [
@@ -55,6 +59,10 @@ class GoogleAuthController extends Controller
         if (! $user->exists) {
             $user->profile_id = Profile::where('code', 'user')->value('id');
             $user->save();
+        }
+
+        if ($user->status === 'suspended') {
+            return redirect()->away(config('app.frontend_url').'/?error=suspended');
         }
 
         $code = Str::random(40);
