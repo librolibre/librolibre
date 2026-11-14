@@ -53,13 +53,13 @@ class UserTest extends TestCase
         User::factory()->create(['email' => 'ane@example.com']);
     }
 
-    public function test_username_must_be_unique(): void
+    /** username is a display name, not an identifier: two neighbours can both be "Ane". */
+    public function test_username_is_not_unique(): void
     {
         User::factory()->create(['username' => 'ane']);
-
-        $this->expectException(UniqueConstraintViolationException::class);
-
         User::factory()->create(['username' => 'ane']);
+
+        $this->assertSame(2, User::where('username', 'ane')->count());
     }
 
     /** Every user must have a profile (user or admin). */
