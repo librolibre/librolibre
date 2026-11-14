@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\Profile;
 use App\Models\User;
 use Dedoc\Scramble\Attributes\Group;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Socialite;
 
 #[Group('Auth')]
@@ -69,5 +71,36 @@ class GoogleAuthController extends Controller
         Cache::put('login-code:'.$code, $user->id, 60);
 
         return redirect()->away(config('app.frontend_url').'/auth/callback?code='.$code);
+    }
+
+    /**
+     * Canjear el código de un solo uso por un token
+     *
+     * El código solo sirve una vez y caduca a los 60 segundos. Devuelve el token de Sanctum,
+     * si el usuario es nuevo (aún no ha aceptado la política de privacidad) y sus datos.
+     *
+     * @unauthenticated
+     */
+    public function token(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'code' => ['required', 'string']
+        ]);
+
+        $userId = Cache::pull('login-code:' . $validated['code']);
+
+        if ($userId === null) {
+            throw ValidationException::withMessages(['code' => 'El código no es válido o ha caducado.']);
+        }
+
+        $user = User::findOrFail($userId);
+        $token = $user->createToken('google-login')->plainTextToken;
+        $isNewUser = $user->privacy_accepted_at === null;
+
+        return response()->json([
+            'token' => $token,
+            'is_new_user' => $isNewUser,
+            'user' => $user,
+        ]);
     }
 }

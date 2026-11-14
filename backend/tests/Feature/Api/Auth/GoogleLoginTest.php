@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\Auth;
 use App\Models\User;
 use Database\Seeders\ProfileSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Laravel\Socialite\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
 use Tests\TestCase;
@@ -106,14 +107,65 @@ class GoogleLoginTest extends TestCase
     }
 
     public function test_code_can_be_exchanged_for_token(): void
-    {}
+    {
+        $user = User::factory()->create();
+
+        $code = 'test-code';
+        Cache::put('login-code:'.$code, $user->id, 60);
+
+        $response = $this->postJson('/api/auth/token', ['code' => $code]);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['token', 'is_new_user', 'user']);
+        $response->assertJsonPath('is_new_user', true);
+        $response->assertJsonPath('user.id', $user->id);
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $user->id,
+            'tokenable_type' => User::class
+        ]);
+    }
 
     public function test_code_can_only_be_used_once(): void
-    {}
+    {
+        $user = User::factory()->create();
+
+        $code = 'test-code';
+        Cache::put('login-code:'.$code, $user->id, 60);
+
+        $this->postJson('/api/auth/token', ['code' => $code])->assertOk();
+        $response = $this->postJson('/api/auth/token', ['code' => $code]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('code');
+    }
 
     public function test_code_expires_after_60_seconds(): void
-    {}
+    {
+        $user = User::factory()->create();
+
+        $code = 'test-code';
+        Cache::put('login-code:'.$code, $user->id, 60);
+
+        $this->travel(61)->seconds();
+
+        $response = $this->postJson('/api/auth/token', ['code' => $code]);
+
+        $response->assertStatus(422);
+        $response->assertJsonValidationErrors('code');
+    }
 
     public function test_token_expires_after_30_days(): void
-    {}
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('google-login')->plainTextToken;
+
+        // The token works on the day it is created
+        $this->withToken($token)->getJson('/api/user')->assertOk();
+
+        // Laravel remembers the logged-in user between requests in a test
+        $this->app['auth']->forgetGuards();
+        $this->travel(31)->days();
+
+        $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
+    }
 }
