@@ -24,7 +24,7 @@ class GoogleAuthController extends Controller
      *
      * @unauthenticated
      */
-    public function redirect()
+    public function redirect(): RedirectResponse
     {
         /** @var \Laravel\Socialite\Two\GoogleProvider $google */
         $google = Socialite::driver('google');
@@ -35,7 +35,15 @@ class GoogleAuthController extends Controller
     /**
      * Volver de Google
      *
-     * Crea la cuenta si es la primera vez y redirige al front end con un código de un solo uso (60 s).
+     * Google redirige aquí después de que el usuario dé su consentimiento. El servidor crea la cuenta
+     * si es la primera vez y redirige al front end con un **código de un solo uso** (válido 60 s),
+     * para que el token no quede en el historial ni en los logs:
+     *
+     * - Éxito: `{FRONTEND_URL}/auth/callback?code=<código>`
+     * - Cancelado en Google: `{FRONTEND_URL}/?error=cancelled`
+     * - Cuenta suspendida: `{FRONTEND_URL}/?error=suspended`
+     *
+     * El front end canjea el código por el token con `POST /auth/token`.
      *
      * @unauthenticated
      */

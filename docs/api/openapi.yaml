@@ -83,36 +83,8 @@ paths:
                   status: { type: string, example: ok }
 
   # ------------------------------------------------------------------ Auth
-  /auth/google/redirect:
-    get:
-      tags: [Auth]
-      summary: Iniciar el acceso con Google
-      description: Redirige al usuario a la pantalla de consentimiento de Google (Socialite).
-      security: []
-      responses:
-        '302':
-          description: Redirección a Google.
-  /auth/google/callback:
-    get:
-      tags: [Auth]
-      summary: Volver de Google
-      description: |
-        Google redirige aquí después de que el usuario de su consentimiento. El servidor crea la cuenta 
-        si es la primera vez y redirige al front end con un **código de un solo uso** (válido 60 secs.),
-        para que el token no quede en el historial ni en logs:
-
-        - Éxito: `{FRONTEND_URL}/auth/callback?code=<código>`
-        - Cancelado en Google: `{FRONTEND_URL}/?error=cancelled`
-        - Cuenta suspendida: `{FRONTEND_URL}/?error=suspended`
-
-        El front end hace un intercambio, el código por el token, con `POST /auth/token`.
-      security: []
-      parameters:
-        - { name: code, in: query, required: false, schema: { type: string } }
-        - { name: state, in: query, required: false, schema: { type: string } }
-      responses:
-        '302':
-          description: Redirección al front end con el código o con un error.
+  # /auth/google/redirect y /auth/google/callback ya están programados: los documenta Scramble (#23).
+  # /auth/token sigue aquí hasta que `user` use el formato OwnUser (UserResource, #27).
   /auth/token:
     post:
       tags: [Auth]
