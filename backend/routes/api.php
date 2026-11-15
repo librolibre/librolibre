@@ -1,8 +1,5 @@
 <?php
 
-use App\Http\Controllers\Api\Auth\GoogleAuthController;
-use App\Http\Controllers\Api\Profile\MeController;
-
 use App\Http\Controllers\Api\Admin\BookController as AdminBookController;
 use App\Http\Controllers\Api\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Api\Admin\UserController as AdminUserController;
@@ -15,6 +12,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\IsbnController;
 use App\Http\Controllers\Api\LanguageController;
+use App\Http\Controllers\Api\MeController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\MyBookController;
 use App\Http\Controllers\Api\NotificationController;
@@ -45,10 +43,10 @@ Route::get('/health', fn () => ['status' => 'ok']);
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/languages', [LanguageController::class, 'index'])->name('languages.index');
 
-Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+Route::get('/auth/google/redirect', [AuthController::class, 'redirect']);
+Route::get('/auth/google/callback', [AuthController::class, 'callback']);
 
-Route::post('/auth/token', [GoogleAuthController::class, 'token']);
+Route::post('/auth/token', [AuthController::class, 'token']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/me', [MeController::class, 'show']);
