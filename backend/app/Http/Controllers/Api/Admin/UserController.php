@@ -1,0 +1,384 @@
+<?php
+
+namespace App\Http\Controllers\Api\Admin;
+
+use Dedoc\Scramble\Attributes\Group;
+use Dedoc\Scramble\Attributes\Response;
+use Illuminate\Http\Request;
+
+/**
+ * STUB: todos los métodos devuelven datos fijos. No hay lógica ni base de datos.
+ * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
+ * Laravel iría a la base de datos y devolvería 404.
+ */
+#[Group('Admin')]
+class UserController extends \App\Http\Controllers\Controller
+{
+    /**
+     * Mostrar lista de usuarios
+     *
+     * RF-34, CU-18. Solo administradores.
+     */
+    #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
+    public function index(Request $request)
+    {
+        $request->validate([
+            /** Nombre o email. */
+            'q' => ['sometimes', 'string'],
+            'status' => ['sometimes', 'in:active,suspended'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+        ]);
+
+        return response()->json([
+            'data' => [
+                [
+                    'id' => 3,
+                    'username' => 'Ane',
+                    'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                    'email' => 'ane@example.com',
+                    'status' => 'active',
+                    'role' => 'user',
+                    'created_at' => '2026-11-15T10:00:00Z',
+                    'books_count' => 3,
+                    'average_rating' => 1.5,
+                    'strikes' => 1,
+                ],
+            ],
+            'links' => [
+                'first' => 'http://localhost:8000/api/admin/users?page=1',
+                'last' => 'http://localhost:8000/api/admin/users?page=5',
+                'prev' => 'http://localhost:8000/api/admin/users?page=1',
+                'next' => 'http://localhost:8000/api/admin/users?page=3',
+            ],
+            'meta' => [
+                'current_page' => 1,
+                'last_page' => 5,
+                'per_page' => 20,
+                'total' => 93,
+            ],
+        ]);
+    }
+
+    /**
+     * Ver el detalle de un usuario
+     *
+     * Libros, intercambios, valoraciones, denuncias recibidas y strikes.
+     */
+    #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
+    #[Response(status: 404, description: 'El recurso no existe o no es visible para el usuario.', type: 'array{message: string}')]
+    public function show(int $user)
+    {
+        return response()->json([
+            'data' => [
+                'id' => 3,
+                'username' => 'Ane',
+                'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                'email' => 'ane@example.com',
+                'status' => 'active',
+                'role' => 'user',
+                'created_at' => '2026-11-15T10:00:00Z',
+                'books_count' => 3,
+                'average_rating' => 1.5,
+                'strikes' => 1,
+                'books' => [
+                    [
+                        'id' => 42,
+                        'isbn' => '9788420412146',
+                        'title' => 'Cien años de soledad',
+                        'author' => 'Gabriel García Márquez',
+                        'publisher' => 'Alfaguara',
+                        'publication_year' => 1,
+                        'publication_place' => 'Madrid',
+                        'edition_name' => 'Edición conmemorativa',
+                        'page_count' => 3,
+                        'dimensions' => '21 x 14 cm',
+                        'weight' => 1,
+                        'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
+                        'categories' => [
+                            [
+                                'id' => 1,
+                                'name' => 'Novela',
+                            ],
+                        ],
+                        'language' => 'es',
+                        'binding_type' => 'paperback',
+                        'condition' => 'new',
+                        'defects' => ['underlining'],
+                        'is_donation' => true,
+                        'notes' => 'Algún subrayado a lápiz en los primeros capítulos.',
+                        'photos' => [
+                            [
+                                'id' => 1,
+                                'url' => 'https://example.com/storage/url.jpg',
+                            ],
+                        ],
+                        'status' => 'available',
+                        'distance_km' => 1.2,
+                        'owner' => [
+                            'id' => 3,
+                            'username' => 'Ane',
+                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                            'description' => 'Lectora de novela y ensayo.',
+                            'languages' => ['es', 'eu'],
+                            'average_rating' => 4.6,
+                            'ratings_count' => 5,
+                            'exchanges_count' => 7,
+                            'member_since' => '2026-11-15T10:00:00Z',
+                            'blocked_by_me' => false,
+                        ],
+                        'is_mine' => false,
+                        'created_at' => '2026-11-15T10:00:00Z',
+                    ],
+                ],
+                'offers' => [
+                    [
+                        'id' => 15,
+                        'type' => 'trade',
+                        'status' => 'pending',
+                        'requested_book' => [
+                            'id' => 42,
+                            'isbn' => '9788420412146',
+                            'title' => 'Cien años de soledad',
+                            'author' => 'Gabriel García Márquez',
+                            'publisher' => 'Alfaguara',
+                            'publication_year' => 1,
+                            'publication_place' => 'Madrid',
+                            'edition_name' => 'Edición conmemorativa',
+                            'page_count' => 3,
+                            'dimensions' => '21 x 14 cm',
+                            'weight' => 1,
+                            'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
+                            'categories' => [
+                                [
+                                    'id' => 1,
+                                    'name' => 'Novela',
+                                ],
+                            ],
+                            'language' => 'es',
+                            'binding_type' => 'paperback',
+                            'condition' => 'new',
+                            'defects' => ['underlining'],
+                            'is_donation' => true,
+                            'notes' => 'Algún subrayado a lápiz en los primeros capítulos.',
+                            'photos' => [
+                                [
+                                    'id' => 1,
+                                    'url' => 'https://example.com/storage/url.jpg',
+                                ],
+                            ],
+                            'status' => 'available',
+                            'distance_km' => 1.2,
+                            'owner' => [
+                                'id' => 3,
+                                'username' => 'Ane',
+                                'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                                'description' => 'Lectora de novela y ensayo.',
+                                'languages' => ['es', 'eu'],
+                                'average_rating' => 4.6,
+                                'ratings_count' => 5,
+                                'exchanges_count' => 7,
+                                'member_since' => '2026-11-15T10:00:00Z',
+                                'blocked_by_me' => false,
+                            ],
+                            'is_mine' => false,
+                            'created_at' => '2026-11-15T10:00:00Z',
+                        ],
+                        'offered_book' => [
+                            'id' => 42,
+                            'isbn' => '9788420412146',
+                            'title' => 'Cien años de soledad',
+                            'author' => 'Gabriel García Márquez',
+                            'publisher' => 'Alfaguara',
+                            'publication_year' => 1,
+                            'publication_place' => 'Madrid',
+                            'edition_name' => 'Edición conmemorativa',
+                            'page_count' => 3,
+                            'dimensions' => '21 x 14 cm',
+                            'weight' => 1,
+                            'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
+                            'categories' => [
+                                [
+                                    'id' => 1,
+                                    'name' => 'Novela',
+                                ],
+                            ],
+                            'language' => 'es',
+                            'binding_type' => 'paperback',
+                            'condition' => 'new',
+                            'defects' => ['underlining'],
+                            'is_donation' => true,
+                            'notes' => 'Algún subrayado a lápiz en los primeros capítulos.',
+                            'photos' => [
+                                [
+                                    'id' => 1,
+                                    'url' => 'https://example.com/storage/url.jpg',
+                                ],
+                            ],
+                            'status' => 'available',
+                            'distance_km' => 1.2,
+                            'owner' => [
+                                'id' => 3,
+                                'username' => 'Ane',
+                                'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                                'description' => 'Lectora de novela y ensayo.',
+                                'languages' => ['es', 'eu'],
+                                'average_rating' => 4.6,
+                                'ratings_count' => 5,
+                                'exchanges_count' => 7,
+                                'member_since' => '2026-11-15T10:00:00Z',
+                                'blocked_by_me' => false,
+                            ],
+                            'is_mine' => false,
+                            'created_at' => '2026-11-15T10:00:00Z',
+                        ],
+                        'requester' => [
+                            'id' => 3,
+                            'username' => 'Ane',
+                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                        ],
+                        'owner' => [
+                            'id' => 3,
+                            'username' => 'Ane',
+                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                        ],
+                        'message' => 'Hola, me interesa tu libro.',
+                        'counteroffer_made' => false,
+                        'delivery_confirmed_by_me' => false,
+                        'delivery_confirmed_by_other' => false,
+                        'chat_read_only' => false,
+                        'unread_messages' => 1,
+                        'can_rate' => false,
+                        'expires_at' => '2026-11-15T10:00:00Z',
+                        'created_at' => '2026-11-15T10:00:00Z',
+                        'updated_at' => '2026-11-15T10:00:00Z',
+                    ],
+                ],
+                'ratings' => [
+                    [
+                        'id' => 1,
+                        'offer_id' => 1,
+                        'rater' => [
+                            'id' => 3,
+                            'username' => 'Ane',
+                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                        ],
+                        'score' => 1,
+                        'comment' => 'Todo perfecto, muy amable.',
+                        'is_published' => true,
+                        'created_at' => '2026-11-15T10:00:00Z',
+                    ],
+                ],
+                'reports_received' => [
+                    [
+                        'id' => 1,
+                        'reporter' => [
+                            'id' => 3,
+                            'username' => 'Ane',
+                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                        ],
+                        'reported_user' => [
+                            'id' => 3,
+                            'username' => 'Ane',
+                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                            'email' => 'ane@example.com',
+                            'status' => 'active',
+                            'role' => 'user',
+                            'created_at' => '2026-11-15T10:00:00Z',
+                            'books_count' => 3,
+                            'average_rating' => 1.5,
+                            'strikes' => 1,
+                        ],
+                        'reason' => 'harassment',
+                        'description' => 'Lectora de novela y ensayo.',
+                        'offer_id' => 1,
+                        'status' => 'open',
+                        'resolution' => [
+                            'admin' => [
+                                'id' => 3,
+                                'username' => 'Ane',
+                                'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                            ],
+                            'reason' => 'Motivo de la decisión.',
+                            'strike_added' => false,
+                            'resolved_at' => '2026-11-15T10:00:00Z',
+                        ],
+                        'created_at' => '2026-11-15T10:00:00Z',
+                    ],
+                ],
+                'actions' => [
+                    [
+                        'action' => 'suspend_user',
+                        'admin' => [
+                            'id' => 3,
+                            'username' => 'Ane',
+                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                        ],
+                        'reason' => 'Motivo de la decisión.',
+                        'created_at' => '2026-11-15T10:00:00Z',
+                    ],
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Suspender una cuenta
+     *
+     * RN-17. No se puede suspender a un admin, ni por supuesto a uno mismo (RN-19).
+     */
+    #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
+    #[Response(status: 409, description: 'La operación incumple una regla de negocio.', type: 'array{message: string, code: string}')]
+    public function suspend(Request $request, int $user)
+    {
+        $request->validate([
+            /** Motivo de la decisión (queda registrado). */
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        return response()->json([
+            'data' => [
+                'id' => 3,
+                'username' => 'Ane',
+                'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                'email' => 'ane@example.com',
+                'status' => 'active',
+                'role' => 'user',
+                'created_at' => '2026-11-15T10:00:00Z',
+                'books_count' => 3,
+                'average_rating' => 1.5,
+                'strikes' => 1,
+            ],
+        ]);
+    }
+
+    /**
+     * Reactivar una cuenta
+     *
+     * Un "reset de strikes", los libros vuelven a estar disponibles y el contador de strikes vuelve a cero
+     * (RN-26).
+     */
+    #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
+    #[Response(status: 409, description: 'La operación incumple una regla de negocio.', type: 'array{message: string, code: string}')]
+    public function reactivate(Request $request, int $user)
+    {
+        $request->validate([
+            /** Motivo de la decisión (queda registrado). */
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        return response()->json([
+            'data' => [
+                'id' => 3,
+                'username' => 'Ane',
+                'photo_url' => 'https://example.com/storage/photo_url.jpg',
+                'email' => 'ane@example.com',
+                'status' => 'active',
+                'role' => 'user',
+                'created_at' => '2026-11-15T10:00:00Z',
+                'books_count' => 3,
+                'average_rating' => 1.5,
+                'strikes' => 1,
+            ],
+        ]);
+    }
+}
