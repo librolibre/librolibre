@@ -121,9 +121,9 @@ class AuthController extends Controller
      *
      * Revoca el token actual.
      */
-    // STUB (from Fiz's scaffold): returns 204 but does not revoke the token yet. Real version in #25.
-    public function logout()
+    public function logout(Request $request)
     {
+        $request->user()->currentAccessToken()->delete();
         return response()->noContent();
     }
 }

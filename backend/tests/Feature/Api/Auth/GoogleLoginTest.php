@@ -173,15 +173,12 @@ class GoogleLoginTest extends TestCase
         $user = User::factory()->create();
         $token = $user->createToken('google-login')->plainTextToken;
 
-        // The token works on the day it is created
-        // $this->withToken($token)->getJson('/api/user')->assertOk();
         $this->withToken($token)->getJson('/api/me')->assertOk();
 
         // Laravel remembers the logged-in user between requests in a test
         $this->app['auth']->forgetGuards();
         $this->travel(31)->days();
 
-        // $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
         $this->withToken($token)->getJson('/api/me')->assertUnauthorized();
     }
 }
