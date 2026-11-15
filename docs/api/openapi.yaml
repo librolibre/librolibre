@@ -83,15 +83,7 @@ paths:
                   status: { type: string, example: ok }
 
   # ------------------------------------------------------------------ Auth
-  # /auth/google/redirect, /auth/google/callback y /auth/token ya están programados: los documenta Scramble (#23, #27).
-  /auth/logout:
-    post:
-      tags: [Auth]
-      summary: Cerrar sesión
-      description: Revoca el token actual.
-      responses:
-        '204': { description: Sesión cerrada. }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
+  # /auth/google/redirect, /auth/google/callback, /auth/token y /auth/logout ya están programados: los documenta Scramble (#23, #25, #27).
 
   # ------------------------------------------------------------------ Profile
   /me:
