@@ -110,14 +110,7 @@ paths:
       responses:
         '204': { description: Cuenta eliminada. }
         '401': { $ref: '#/components/responses/Unauthenticated' }
-  /me/privacy-consent:
-    post:
-      tags: [Profile]
-      summary: Aceptar la política de privacidad
-      description: Primer acceso (Si es la primera vez que accede con Google)
-      responses:
-        '204': { description: Aceptación registrada. }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
+  # /me/privacy-consent ya está programado: lo documenta Scramble (#27).
   /me/photo:
     post:
       tags: [Profile]

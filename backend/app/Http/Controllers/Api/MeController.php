@@ -7,9 +7,12 @@ use App\Http\Controllers\Controller;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
+// Aliased: "Response" is already Scramble's attribute above
+use Illuminate\Http\Response as HttpResponse;
 
 /**
- * STUB: todos los métodos devuelven datos fijos. No hay lógica ni base de datos.
+ * STUB: update, destroy y updatePhoto devuelven datos fijos. No hay lógica ni base de datos.
+ * show y acceptPrivacyConsent ya están programados (#27).
  * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
  * Laravel iría a la base de datos y devolvería 404.
  */
@@ -83,10 +86,19 @@ class MeController extends Controller
     /**
      * Aceptar la política de privacidad
      *
-     * Primer acceso (Si es la primera vez que accede con Google)
+     * Primer acceso (Si es la primera vez que accede con Google). Guarda la fecha y hora de la aceptación;
+     * si ya la había aceptado, se mantiene la primera fecha.
      */
-    public function acceptPrivacyConsent()
+    public function acceptPrivacyConsent(Request $request): HttpResponse
     {
+        $user = $request->user();
+
+        // The first date is kept: it proves when consent was given
+        if ($user->privacy_accepted_at === null) {
+            $user->privacy_accepted_at = now();
+            $user->save();
+        }
+
         return response()->noContent();
     }
 
