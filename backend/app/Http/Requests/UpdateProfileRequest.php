@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateProfileRequest extends FormRequest
 {
@@ -27,8 +28,8 @@ class UpdateProfileRequest extends FormRequest
             'username' => ['sometimes', 'string', 'min:2', 'max:60'],
             'description' => ['nullable', 'string', 'max:300'],
             'languages' => ['sometimes', 'array'],
-            // TODO: an unknown code must return 422 (UpdateProfileTest) -> add Rule::exists('languages', 'code')
-            'languages.*' => ['string', 'min:2', 'max:2'],
+            // An unknown language code returns 422
+            'languages.*' => ['string', 'min:2', 'max:2', Rule::exists('languages', 'code')],
             'location' => ['nullable', 'array'],
             'location.latitude' => ['required_with:location', 'numeric'],
             'location.longitude' => ['required_with:location', 'numeric'],

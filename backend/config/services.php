@@ -34,9 +34,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL').'/api/auth/google/callback'),
     ],
 
-    // TODO: Google Maps Geocoding key (used by GeocodingService)
-    //   'google_maps' => ['key' => env('YOUR_VAR_NAME')],
-    //   then add YOUR_VAR_NAME= (empty) to .env.example and the real value to your own .env
+    // Google Maps Geocoding key (used by GeocodingService)
+    'google_maps' => [
+        'key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
 
     'slack' => [
         'notifications' => [

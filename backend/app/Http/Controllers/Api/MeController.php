@@ -5,16 +5,19 @@ namespace App\Http\Controllers\Api;
 use App\Http\Resources\OwnUserResource;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Controllers\Controller;
+use App\Models\Language;
 use App\Services\GeocodingService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Validation\ValidationException;
 // Aliased: "Response" is already Scramble's attribute above
 use Illuminate\Http\Response as HttpResponse;
 
 /**
- * STUB: update, destroy y updatePhoto devuelven datos fijos. No hay lógica ni base de datos.
- * show y acceptPrivacyConsent ya están programados (#27).
+ * STUB: destroy y updatePhoto devuelven datos fijos. No hay lógica ni base de datos.
+ * show, update y acceptPrivacyConsent ya están programados (#27).
  * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
  * Laravel iría a la base de datos y devolvería 404.
  */
@@ -35,34 +38,43 @@ class MeController extends Controller
      * Editar mi perfil
      *
      * RF-04. Solo se cambian los campos enviados. Las coordenadas se redondean antes de guardarse.
+     * Con `postal_code` y sin `location`, las coordenadas se calculan con Google Maps; si no encuentra
+     * el código postal, devuelve `422` y no se guarda nada.
      */
     public function update(UpdateProfileRequest $request, GeocodingService $geocoding): OwnUserResource
     {
         $user = $request->user();
         $data = $request->validated(); // only the keys that were sent AND passed validation
 
-        // TODO 1. Location: decide the coordinates BEFORE saving anything
-        //   if 'location' was sent (array_key_exists: it may be null to clear it):
-        //       latitude/longitude = round(..., 2)   (or null if location is null)
-        //   elseif 'postal_code' was sent and is not null:
-        //       $coords = $geocoding->coordinatesFor($data['postal_code'])
-        //       if $coords === null -> throw ValidationException::withMessages(['postal_code' => '...'])
-        //       latitude/longitude = round($coords..., 2)
-        //   (no location and no postal code -> leave the coordinates alone)
-        //   Throw BEFORE save(): the "not found" test checks that nothing was written.
+        // 1. Location, decided before saving anything (a 422 must leave the user untouched)
+        if (array_key_exists('location', $data)) {
+            // Sent by the front end (null clears it); Google Maps is not called
+            $user->latitude = $data['location'] === null ? null : round((float) $data['location']['latitude'], 2);
+            $user->longitude = $data['location'] === null ? null : round((float) $data['location']['longitude'], 2);
+        } elseif (isset($data['postal_code'])) {
+            $coordinates = $geocoding->coordinatesFor($data['postal_code']);
 
-        // TODO 2. Simple fields: fill only the keys present
-        //   Arr::only($data, ['username', 'description', 'postal_code'])
-        //   + latitude/longitude from step 1, if you decided them
+            if ($coordinates === null) {
+                throw ValidationException::withMessages(['postal_code' => 'No encontramos ese código postal.']);
+            }
 
-        // TODO 3. Save
+            $user->latitude = round($coordinates['lat'], 2);
+            $user->longitude = round($coordinates['lng'], 2);
+        }
 
-        // TODO 4. Languages, only if the 'languages' key was sent
-        //   codes -> ids: Language::whereIn('code', ...)->pluck('id')
-        //   $user->languages()->sync($ids)
+        // 2. Simple fields, only the keys that were sent (status, strikes and role are never here)
+        $user->fill(Arr::only($data, ['username', 'description', 'postal_code']));
 
-        // TODO 5. Return the fresh user (fresh() or load('languages'))
-        return new OwnUserResource($user);
+        // 3. Save
+        $user->save();
+
+        // 4. Languages, only if the key was sent: the codes replace the previous list
+        if (array_key_exists('languages', $data)) {
+            $user->languages()->sync(Language::whereIn('code', $data['languages'])->pluck('id'));
+        }
+
+        // 5. Fresh copy, so the response includes the new languages
+        return new OwnUserResource($user->fresh());
     }
 
     /**
