@@ -3,14 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\LanguageResource;
+use App\Models\Language;
 use Dedoc\Scramble\Attributes\Group;
-use Dedoc\Scramble\Attributes\Response;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-/**
- * STUB: todos los métodos devuelven datos fijos. No hay lógica ni base de datos.
- * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
- * Laravel iría a la base de datos y devolvería 404.
- */
 #[Group('Reference data')]
 class LanguageController extends Controller
 {
@@ -18,16 +15,20 @@ class LanguageController extends Controller
      * Mostrar lista de los idiomas
      *
      * Para el idioma del libro y los idiomas de lectura del perfil, no para la localización de la app.
+     * Ordenados por nombre.
+     *
+     * @unauthenticated
      */
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
-        return response()->json([
-            'data' => [
-                [
-                    'code' => 'es',
-                    'name' => 'Castellano',
-                ],
-            ],
-        ]);
+        // return response()->json([
+        //     'data' => [
+        //         [
+        //             'code' => 'es',
+        //             'name' => 'Castellano',
+        //         ],
+        //     ],
+        // ]);
+        return LanguageResource::collection(Language::orderBy('name')->get());
     }
 }
