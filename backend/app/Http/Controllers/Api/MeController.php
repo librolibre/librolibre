@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\OwnUserResource;
+use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Controllers\Controller;
+use App\Services\GeocodingService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
@@ -34,41 +36,33 @@ class MeController extends Controller
      *
      * RF-04. Solo se cambian los campos enviados. Las coordenadas se redondean antes de guardarse.
      */
-    public function update(Request $request)
+    public function update(UpdateProfileRequest $request, GeocodingService $geocoding): OwnUserResource
     {
-        $request->validate([
-            'username' => ['sometimes', 'string', 'min:2', 'max:60'],
-            'description' => ['nullable', 'string', 'max:300'],
-            'languages' => ['sometimes', 'array'],
-            'languages.*' => ['string', 'min:2', 'max:2'],
-            'location' => ['nullable', 'array'],
-            'location.latitude' => ['required_with:location', 'numeric'],
-            'location.longitude' => ['required_with:location', 'numeric'],
-            'postal_code' => ['nullable', 'string', 'regex:/^[0-9]{5}$/'],
-        ]);
+        $user = $request->user();
+        $data = $request->validated(); // only the keys that were sent AND passed validation
 
-        return response()->json([
-            'data' => [
-                'id' => 3,
-                'username' => 'Ane',
-                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                'description' => 'Lectora de novela y ensayo.',
-                'languages' => ['es', 'eu'],
-                'average_rating' => 4.6,
-                'ratings_count' => 5,
-                'exchanges_count' => 7,
-                'member_since' => '2026-11-15T10:00:00Z',
-                'blocked_by_me' => false,
-                'email' => 'ane@example.com',
-                'location' => [
-                    'latitude' => 42.85,
-                    'longitude' => -2.67,
-                ],
-                'role' => 'user',
-                'privacy_accepted' => false,
-                'postal_code' => '01005',
-            ],
-        ]);
+        // TODO 1. Location: decide the coordinates BEFORE saving anything
+        //   if 'location' was sent (array_key_exists: it may be null to clear it):
+        //       latitude/longitude = round(..., 2)   (or null if location is null)
+        //   elseif 'postal_code' was sent and is not null:
+        //       $coords = $geocoding->coordinatesFor($data['postal_code'])
+        //       if $coords === null -> throw ValidationException::withMessages(['postal_code' => '...'])
+        //       latitude/longitude = round($coords..., 2)
+        //   (no location and no postal code -> leave the coordinates alone)
+        //   Throw BEFORE save(): the "not found" test checks that nothing was written.
+
+        // TODO 2. Simple fields: fill only the keys present
+        //   Arr::only($data, ['username', 'description', 'postal_code'])
+        //   + latitude/longitude from step 1, if you decided them
+
+        // TODO 3. Save
+
+        // TODO 4. Languages, only if the 'languages' key was sent
+        //   codes -> ids: Language::whereIn('code', ...)->pluck('id')
+        //   $user->languages()->sync($ids)
+
+        // TODO 5. Return the fresh user (fresh() or load('languages'))
+        return new OwnUserResource($user);
     }
 
     /**
