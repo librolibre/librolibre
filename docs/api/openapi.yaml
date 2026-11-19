@@ -88,19 +88,7 @@ paths:
   # ------------------------------------------------------------------ Profile
   /me:
     # GET /me ya está programado: lo documenta Scramble (#27).
-    patch:
-      tags: [Profile]
-      summary: Editar mi perfil
-      description: RF-04. Solo se cambian los campos enviados. Las coordenadas se redondean antes de guardarse.
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema: { $ref: '#/components/schemas/ProfileInput' }
-      responses:
-        '200': { $ref: '#/components/responses/OwnUserOk' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '422': { $ref: '#/components/responses/ValidationFailed' }
+    # PATCH /me ya está programado: lo documenta Scramble (#27).
     delete:
       tags: [Profile]
       summary: Eliminar mi cuenta
@@ -1231,14 +1219,6 @@ components:
             role: { $ref: '#/components/schemas/UserRole' }
             privacy_accepted: { type: boolean }
             postal_code: { type: [string, 'null'], pattern: '^[0-9]{5}$', example: '01005' }
-    ProfileInput:
-      type: object
-      properties:
-        username: { type: string, minLength: 2, maxLength: 60 }
-        description: { type: [string, 'null'], maxLength: 300 }
-        languages: { type: array, items: { type: string, minLength: 2, maxLength: 2 } }
-        location: { oneOf: [{ $ref: '#/components/schemas/ApproximateLocation' }, { type: 'null' }] }
-        postal_code: { type: [string, 'null'], pattern: '^[0-9]{5}$', example: '01005' }
     AdminUser:
       allOf:
         - $ref: '#/components/schemas/UserSummary'
