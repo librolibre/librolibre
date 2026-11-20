@@ -86,18 +86,8 @@ paths:
   # /auth/google/redirect, /auth/google/callback, /auth/token y /auth/logout ya están programados: los documenta Scramble (#23, #25, #27).
 
   # ------------------------------------------------------------------ Profile
-  /me:
-    # GET /me ya está programado: lo documenta Scramble (#27).
-    # PATCH /me ya está programado: lo documenta Scramble (#27).
-    delete:
-      tags: [Profile]
-      summary: Eliminar mi cuenta
-      description: |
-        RF-05, RN-16. Con esto se cancelan todas las solicitudes en curso, se avisa a la(s) otra(s) parte(s) y 
-        se retiran los libros. La confirmación («¿Seguro?») la pide el front end.
-      responses:
-        '204': { description: Cuenta eliminada. }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
+  # GET /me y PATCH /me ya están programados: los documenta Scramble (#27).
+  # DELETE /me ya está programado: lo documenta Scramble (#29).
   # /me/privacy-consent ya está programado: lo documenta Scramble (#27).
   # /me/photo ya está programado: lo documenta Scramble (#27).
   /me/books:
@@ -1079,7 +1069,7 @@ components:
       enum: [trade, donation]
     UserStatus:
       type: string
-      enum: [active, suspended]
+      enum: [active, suspended, deleted]
     UserRole:
       type: string
       description: Corresponde a `profiles.code`.

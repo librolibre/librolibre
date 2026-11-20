@@ -2,25 +2,24 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Resources\OwnUserResource;
-use App\Http\Requests\UpdateProfileRequest;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\UpdateProfileRequest;
+use App\Http\Resources\OwnUserResource;
 use App\Models\Language;
+use App\Services\AccountService;
 use App\Services\GeocodingService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
+// Aliased: "Response" is already Scramble's attribute above
+use Illuminate\Http\Response as HttpResponse;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
-// Aliased: "Response" is already Scramble's attribute above
-use Illuminate\Http\Response as HttpResponse;
 
 /**
- * STUB: destroy devuelve datos fijos (se programa en #29).
- * show, update, acceptPrivacyConsent y updatePhoto ya están programados (#27).
- * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
- * Laravel iría a la base de datos y devolvería 404.
+ * The logged-in user's own account (/me). Everything is implemented:
+ * show, update, acceptPrivacyConsent and updatePhoto (#27); destroy (#29), through AccountService.
  */
 #[Group('Profile')]
 class MeController extends Controller
@@ -81,12 +80,15 @@ class MeController extends Controller
     /**
      * Eliminar mi cuenta
      *
-     * RF-05, RN-16. Con esto se cancelan todas las solicitudes en curso, se avisa a la(s) otra(s) parte(s)
-     * y
-     * se retiran los libros. La confirmación («¿Seguro?») la pide el front end.
+     * RF-05, RN-16. La cuenta se anonimiza en lugar de borrarse: se sustituyen el email, el usuario
+     * y el identificador de Google, se borran los datos personales y la foto, sus libros se retiran
+     * del catálogo, se eliminan sus bloqueos y se revocan todas sus sesiones. Si vuelve a entrar con
+     * Google, se crea una cuenta nueva. La confirmación («¿Seguro?») la pide el front end.
      */
-    public function destroy()
+    public function destroy(Request $request, AccountService $accounts): HttpResponse
     {
+        $accounts->delete($request->user());
+
         return response()->noContent();
     }
 
