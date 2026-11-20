@@ -3,6 +3,7 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -23,13 +24,17 @@ class PublicUserResource extends JsonResource
         $averageRating = $this->ratingsReceived()->avg('score');
         // The logged-in user looking at this profile, or null for a visitor (auth.optional)
         $viewer = $request->user();
+        // The photos disk comes from config (public locally, a bucket in production)
+        /** @var FilesystemAdapter $photosDisk */
+        $photosDisk = Storage::disk(config('filesystems.photos_disk'));
 
         // The comments on each key become the field descriptions in Scramble (in Spanish, like the contract)
         return [
             'id' => $this->id,
             'username' => $this->username,
             /** @var string|null */
-            'photo_url' => $this->photo_path ? Storage::disk('public')->url($this->photo_path) : null,
+            // 'photo_url' => $this->photo_path ? Storage::disk('public')->url($this->photo_path) : null,
+            'photo_url' => $this->photo_path ? $photosDisk->url($this->photo_path) : null,
             'description' => $this->description,
             /**
              * Códigos de los idiomas de lectura.
