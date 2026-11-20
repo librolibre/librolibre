@@ -17,6 +17,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Photos Disk (LibroLibre)
+    |--------------------------------------------------------------------------
+    |
+    | Where profile photos (and later book photos) are stored. "public" works
+    | locally; in production (Heroku wipes its disk on every restart) this
+    | becomes "s3", pointing to a bucket, with no code change.
+    |
+    */
+
+    'photos_disk' => env('PHOTOS_DISK', 'public'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |

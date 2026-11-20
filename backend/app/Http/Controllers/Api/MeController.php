@@ -11,13 +11,14 @@ use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 // Aliased: "Response" is already Scramble's attribute above
 use Illuminate\Http\Response as HttpResponse;
 
 /**
- * STUB: destroy y updatePhoto devuelven datos fijos. No hay lógica ni base de datos.
- * show, update y acceptPrivacyConsent ya están programados (#27).
+ * STUB: destroy devuelve datos fijos (se programa en #29).
+ * show, update, acceptPrivacyConsent y updatePhoto ya están programados (#27).
  * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
  * Laravel iría a la base de datos y devolvería 404.
  */
@@ -110,35 +111,54 @@ class MeController extends Controller
 
     /**
      * Cambiar mi foto de perfil
+     *
+     * Guarda la foto (JPG o PNG, máximo 2 MB) y devuelve el perfil con la nueva `photo_url`.
+     * La foto anterior se borra.
      */
-    public function updatePhoto(Request $request)
+    public function updatePhoto(Request $request): OwnUserResource
     {
         $request->validate([
             /** JPG o PNG, máximo 2 MB. */
             'photo' => ['required', 'file', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
         ]);
 
-        return response()->json([
-            'data' => [
-                'id' => 3,
-                'username' => 'Ane',
-                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                'description' => 'Lectora de novela y ensayo.',
-                'languages' => ['es', 'eu'],
-                'average_rating' => 4.6,
-                'ratings_count' => 5,
-                'exchanges_count' => 7,
-                'member_since' => '2026-11-15T10:00:00Z',
-                'blocked_by_me' => false,
-                'email' => 'ane@example.com',
-                'location' => [
-                    'latitude' => 42.85,
-                    'longitude' => -2.67,
-                ],
-                'role' => 'user',
-                'privacy_accepted' => false,
-                'postal_code' => '01005',
-            ],
-        ]);
+        // return response()->json([
+        //     'data' => [
+        //         'id' => 3,
+        //         'username' => 'Ane',
+        //         'photo_url' => 'https://example.com/storage/photo_url.jpg',
+        //         'description' => 'Lectora de novela y ensayo.',
+        //         'languages' => ['es', 'eu'],
+        //         'average_rating' => 4.6,
+        //         'ratings_count' => 5,
+        //         'exchanges_count' => 7,
+        //         'member_since' => '2026-11-15T10:00:00Z',
+        //         'blocked_by_me' => false,
+        //         'email' => 'ane@example.com',
+        //         'location' => [
+        //             'latitude' => 42.85,
+        //             'longitude' => -2.67,
+        //         ],
+        //         'role' => 'user',
+        //         'privacy_accepted' => false,
+        //         'postal_code' => '01005',
+        //     ],
+        // ]);
+
+        $user = $request->user();
+        // The photos disk comes from config (public locally, a bucket in production)
+        $disk = config('filesystems.photos_disk');
+        $oldPath = $user->photo_path;
+
+        // store() gives the file a random name and returns its path; only the path is saved
+        $user->photo_path = $request->file('photo')->store('profile-photos', $disk);
+        $user->save();
+
+        // The old file is deleted only after the new one is saved, so a failed upload keeps the old photo
+        if ($oldPath !== null) {
+            Storage::disk($disk)->delete($oldPath);
+        }
+
+        return new OwnUserResource($user->fresh());
     }
 }

@@ -99,23 +99,7 @@ paths:
         '204': { description: Cuenta eliminada. }
         '401': { $ref: '#/components/responses/Unauthenticated' }
   # /me/privacy-consent ya está programado: lo documenta Scramble (#27).
-  /me/photo:
-    post:
-      tags: [Profile]
-      summary: Cambiar mi foto de perfil
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [photo]
-              properties:
-                photo: { type: string, format: binary, description: 'JPG o PNG, máximo 2 MB.' }
-      responses:
-        '200': { $ref: '#/components/responses/OwnUserOk' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '422': { $ref: '#/components/responses/ValidationFailed' }
+  # /me/photo ya está programado: lo documenta Scramble (#27).
   /me/books:
     get:
       tags: [My books]
