@@ -134,25 +134,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
 
   # ------------------------------------------------------------------ Users
-  /users/{user}:
-    get:
-      tags: [Users]
-      summary: Ver el perfil público de un usuario
-      description: RF-18. Nunca incluye email ni ubicación.
-      security:
-        - {}
-        - sanctum: []
-      parameters: [{ $ref: '#/components/parameters/UserId' }]
-      responses:
-        '200':
-          description: Perfil público.
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  data: { $ref: '#/components/schemas/PublicUser' }
-        '404': { $ref: '#/components/responses/NotFound' }
+  # /users/{user} ya está programado: lo documenta Scramble (#27).
   /users/{user}/ratings:
     get:
       tags: [Users]
