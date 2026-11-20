@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Dedoc\Scramble\Attributes\Group;
-use Dedoc\Scramble\Attributes\Response;
 
 /**
  * STUB: todos los métodos devuelven datos fijos. No hay lógica ni base de datos.
@@ -38,7 +37,7 @@ class SuggestionController extends Controller
                     'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],

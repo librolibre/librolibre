@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Http\Controllers\Controller;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
@@ -12,7 +13,7 @@ use Illuminate\Http\Request;
  * Laravel iría a la base de datos y devolvería 404.
  */
 #[Group('Admin')]
-class UserController extends \App\Http\Controllers\Controller
+class UserController extends Controller
 {
     /**
      * Mostrar lista de usuarios
@@ -96,7 +97,7 @@ class UserController extends \App\Http\Controllers\Controller
                         'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                         'categories' => [
                             [
-                                'id' => 1,
+                                'code' => 'novel',
                                 'name' => 'Novela',
                             ],
                         ],
@@ -150,7 +151,7 @@ class UserController extends \App\Http\Controllers\Controller
                             'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                             'categories' => [
                                 [
-                                    'id' => 1,
+                                    'code' => 'novel',
                                     'name' => 'Novela',
                                 ],
                             ],
@@ -198,7 +199,7 @@ class UserController extends \App\Http\Controllers\Controller
                             'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                             'categories' => [
                                 [
-                                    'id' => 1,
+                                    'code' => 'novel',
                                     'name' => 'Novela',
                                 ],
                             ],

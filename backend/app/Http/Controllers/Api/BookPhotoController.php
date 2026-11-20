@@ -44,7 +44,7 @@ class BookPhotoController extends Controller
                 'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                 'categories' => [
                     [
-                        'id' => 1,
+                        'code' => 'novel',
                         'name' => 'Novela',
                     ],
                 ],
