@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Dedoc\Scramble\Attributes\Group;
-use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
 
 /**
@@ -28,7 +27,8 @@ class CatalogController extends Controller
         $request->validate([
             /** Título, autor o ISBN. */
             'q' => ['sometimes', 'string'],
-            'category_id' => ['sometimes', 'integer'],
+            /** Código de la categoría. */
+            'category' => ['sometimes', 'string'],
             /** Código ISO 639-1. */
             'language' => ['sometimes', 'string'],
             /** Estado mínimo; devuelve ese estado o mejores. */
@@ -64,7 +64,7 @@ class CatalogController extends Controller
                     'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -124,7 +124,8 @@ class CatalogController extends Controller
     {
         $request->validate([
             'q' => ['sometimes', 'string'],
-            'category_id' => ['sometimes', 'integer'],
+            /** Código de la categoría. */
+            'category' => ['sometimes', 'string'],
             'is_donation' => ['sometimes', 'boolean'],
             'max_distance' => ['sometimes', 'numeric'],
         ]);

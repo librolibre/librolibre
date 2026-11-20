@@ -37,7 +37,7 @@ class BookController extends Controller
                 'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                 'categories' => [
                     [
-                        'id' => 1,
+                        'code' => 'novel',
                         'name' => 'Novela',
                     ],
                 ],
@@ -94,8 +94,9 @@ class BookController extends Controller
             /** En gramos. */
             'weight' => ['nullable', 'integer'],
             'cover_image_url' => ['nullable', 'string', 'url'],
-            'category_ids' => ['required', 'array', 'min:1'],
-            'category_ids.*' => ['integer'],
+            /** Códigos de las categorías (los de `GET /categories`). */
+            'categories' => ['required', 'array', 'min:1'],
+            'categories.*' => ['string', 'distinct'],
             'language' => ['required', 'string', 'min:2', 'max:2'],
             'binding_type' => ['required', 'in:paperback,hardcover,pocket,other'],
             'condition' => ['required', 'in:new,like_new,very_good,good,acceptable'],
@@ -123,7 +124,7 @@ class BookController extends Controller
                 'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                 'categories' => [
                     [
-                        'id' => 1,
+                        'code' => 'novel',
                         'name' => 'Novela',
                     ],
                 ],
@@ -182,8 +183,9 @@ class BookController extends Controller
             /** En gramos. */
             'weight' => ['nullable', 'integer'],
             'cover_image_url' => ['nullable', 'string', 'url'],
-            'category_ids' => ['required', 'array', 'min:1'],
-            'category_ids.*' => ['integer'],
+            /** Códigos de las categorías (los de `GET /categories`). */
+            'categories' => ['required', 'array', 'min:1'],
+            'categories.*' => ['string', 'distinct'],
             'language' => ['required', 'string', 'min:2', 'max:2'],
             'binding_type' => ['required', 'in:paperback,hardcover,pocket,other'],
             'condition' => ['required', 'in:new,like_new,very_good,good,acceptable'],
@@ -210,7 +212,7 @@ class BookController extends Controller
                 'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                 'categories' => [
                     [
-                        'id' => 1,
+                        'code' => 'novel',
                         'name' => 'Novela',
                     ],
                 ],
@@ -282,7 +284,7 @@ class BookController extends Controller
                 'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                 'categories' => [
                     [
-                        'id' => 1,
+                        'code' => 'novel',
                         'name' => 'Novela',
                     ],
                 ],
@@ -341,7 +343,7 @@ class BookController extends Controller
                 'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                 'categories' => [
                     [
-                        'id' => 1,
+                        'code' => 'novel',
                         'name' => 'Novela',
                     ],
                 ],

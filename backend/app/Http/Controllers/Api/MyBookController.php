@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Dedoc\Scramble\Attributes\Group;
-use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
 
 /**
@@ -42,7 +41,7 @@ class MyBookController extends Controller
                     'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],

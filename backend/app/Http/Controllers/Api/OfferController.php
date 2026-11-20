@@ -52,7 +52,7 @@ class OfferController extends Controller
                         'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                         'categories' => [
                             [
-                                'id' => 1,
+                                'code' => 'novel',
                                 'name' => 'Novela',
                             ],
                         ],
@@ -100,7 +100,7 @@ class OfferController extends Controller
                         'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                         'categories' => [
                             [
-                                'id' => 1,
+                                'code' => 'novel',
                                 'name' => 'Novela',
                             ],
                         ],
@@ -212,7 +212,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -260,7 +260,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -346,7 +346,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -394,7 +394,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -482,7 +482,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -530,7 +530,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -614,7 +614,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -662,7 +662,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -754,7 +754,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -802,7 +802,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -889,7 +889,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -937,7 +937,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -1024,7 +1024,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/42.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -1072,7 +1072,7 @@ class OfferController extends Controller
                     'cover_image_url' => 'https://example.com/storage/covers/57.jpg',
                     'categories' => [
                         [
-                            'id' => 1,
+                            'code' => 'novel',
                             'name' => 'Novela',
                         ],
                     ],
@@ -1129,4 +1129,3 @@ class OfferController extends Controller
         ]);
     }
 }
-
