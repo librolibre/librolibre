@@ -3,29 +3,32 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\CategoryResource;
+use App\Models\Category;
 use Dedoc\Scramble\Attributes\Group;
-use Dedoc\Scramble\Attributes\Response;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
-/**
- * STUB: todos los métodos devuelven datos fijos. No hay lógica ni base de datos.
- * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
- * Laravel iría a la base de datos y devolvería 404.
- */
 #[Group('Reference data')]
 class CategoryController extends Controller
 {
     /**
      * Mostrar lista de las categorías (géneros)
+     *
+     * Para clasificar los libros y filtrar el catálogo. Los libros se refieren a las categorías por
+     * su `code`, igual que a los idiomas. Ordenadas por nombre.
+     *
+     * @unauthenticated
      */
-    public function index()
+    public function index(): AnonymousResourceCollection
     {
-        return response()->json([
-            'data' => [
-                [
-                    'id' => 1,
-                    'name' => 'Novela',
-                ],
-            ],
-        ]);
+        // return response()->json([
+        //     'data' => [
+        //         [
+        //             'id' => 1,
+        //             'name' => 'Novela',
+        //         ],
+        //     ],
+        // ]);
+        return CategoryResource::collection(Category::orderBy('name')->get());
     }
 }
