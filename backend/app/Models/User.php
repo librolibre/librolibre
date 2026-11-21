@@ -15,16 +15,16 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 #[Fillable([
-    'username', 
-    'email', 
-    'google_id', 
-    'photo_path', 
-    'description', 
-    'postal_code', 
-    'latitude', 
-    'longitude', 
-    'privacy_accepted_at'
-    ])]
+    'username',
+    'email',
+    'google_id',
+    'photo_path',
+    'description',
+    'postal_code',
+    'latitude',
+    'longitude',
+    'privacy_accepted_at',
+])]
 #[Hidden(['google_id'])]
 class User extends Authenticatable
 {
@@ -48,6 +48,13 @@ class User extends Authenticatable
     public function profile(): BelongsTo
     {
         return $this->belongsTo(Profile::class);
+    }
+
+    // An admin is a user whose profile has the code "admin" (RN-19).
+    // The only place this rule lives: the admin Gate and the suspension rules use it.
+    public function isAdmin(): bool
+    {
+        return $this->profile?->code === 'admin';
     }
 
     public function languages(): BelongsToMany
@@ -76,6 +83,12 @@ class User extends Authenticatable
     public function ratingsReceived(): HasMany
     {
         return $this->hasMany(Rating::class, 'user_rated_id');
+    }
+
+    // Actions this admin has taken in the admin panel (admin_actions.admin_id)
+    public function adminActions(): HasMany
+    {
+        return $this->hasMany(AdminAction::class, 'admin_id');
     }
 
     // Completed exchanges, as requester or as owner of the requested book

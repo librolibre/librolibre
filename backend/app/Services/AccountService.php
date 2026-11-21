@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\BusinessRuleException;
 use App\Models\Block;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,51 @@ class AccountService
         }
     }
 
-    // TODO (#36) suspend(User $user, string $reason) and reactivate(User $user)
+    // TODO (#36) reactivate(User $user)
+
+    /**
+     * Suspends the account (#36, RN-17): the user can no longer log in or use the API.
+     * The admin and the reason are recorded in admin_actions.
+     *
+     * @param  User  $user  the user being suspended (from the URL)
+     * @param  User  $admin  the admin doing it (the logged-in user)
+     *
+     * @throws BusinessRuleException ADMIN_PROTECTED when the target is the admin themselves or another admin (RN-19)
+     */
+    public function suspend(User $user, User $admin, string $reason): void
+    {
+        // The rules are checked before anything is saved: a throw stops the method here,
+        // and BusinessRuleException::render() answers 409 with the code
+        // is(): same model (same table and id). Checked first so the message is the specific one
+        if ($user->is($admin)) {
+            throw new BusinessRuleException('ADMIN_PROTECTED', 'No puedes suspender tu propia cuenta.');
+        }
+
+        if ($user->isAdmin()) {
+            throw new BusinessRuleException('ADMIN_PROTECTED', 'No se puede suspender a un administrador.');
+        }
+
+        if ($user->status !== 'active') {
+            throw new BusinessRuleException('INVALID_STATUS', 'Esta cuenta no está activa.');
+        }
+
+        DB::transaction(function () use ($user, $admin, $reason) {
+            // The account is suspended
+            $user->status = 'suspended';
+            $user->save();
+
+            // All their sessions end: their next request gets 401
+            $this->revokeTokens($user);
+
+            // Who suspended and why (admin_id is from adminActions() relation)
+            $admin->adminActions()->create([
+                'action' => 'suspend_user',
+                'target_type' => 'user',
+                'target_id' => $user->id,
+                'reason' => $reason,
+            ]);
+        });
+    }
 
     /**
      * Replaces email, google_id and username with values that identify nobody and stay unique,

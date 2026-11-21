@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AdminUserResource;
+use App\Models\User;
+use App\Services\AccountService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
 
 /**
- * STUB: todos los métodos devuelven datos fijos. No hay lógica ni base de datos.
- * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
- * Laravel iría a la base de datos y devolvería 404.
+ * The admin panel's users. Only admins get here (the admin Gate, #32).
+ * suspend is implemented (#36), through AccountService; the other methods are still stubs with fixed data.
+ * Stubs take scalar route parameters on purpose (route model binding would query the database and give 404);
+ * implemented methods (and show) take the User model instead.
  */
 #[Group('Admin')]
 class UserController extends Controller
@@ -67,7 +71,7 @@ class UserController extends Controller
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
     #[Response(status: 404, description: 'El recurso no existe o no es visible para el usuario.', type: 'array{message: string}')]
-    public function show(int $user)
+    public function show(User $user)
     {
         return response()->json([
             'data' => [
@@ -329,27 +333,16 @@ class UserController extends Controller
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
     #[Response(status: 409, description: 'La operación incumple una regla de negocio.', type: 'array{message: string, code: string}')]
-    public function suspend(Request $request, int $user)
+    public function suspend(AccountService $accounts, Request $request, User $user): AdminUserResource
     {
-        $request->validate([
+        $validated = $request->validate([
             /** Motivo de la decisión (queda registrado). */
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
-        return response()->json([
-            'data' => [
-                'id' => 3,
-                'username' => 'Ane',
-                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                'email' => 'ane@example.com',
-                'status' => 'active',
-                'role' => 'user',
-                'created_at' => '2026-11-15T10:00:00Z',
-                'books_count' => 3,
-                'average_rating' => 1.5,
-                'strikes' => 1,
-            ],
-        ]);
+        $accounts->suspend($user, $request->user(), $validated['reason']);
+
+        return new AdminUserResource($user->fresh());
     }
 
     /**
