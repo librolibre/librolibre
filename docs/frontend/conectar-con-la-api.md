@@ -1,7 +1,7 @@
 # Conectar Angular con la API de Laravel
 
 Guía con código de ejemplo para conectar el front end (Angular) con el back end (Laravel).
-El código compila con la versión de Angular del proyecto; los nombres de archivo son una propuesta y se pueden cambiar.
+El código compila con la versión de Angular del proyecto. Los nombres de los archivos y de las clases son los que crea `ng generate` (Angular 20 o superior).
 
 ## Cómo funciona
 
@@ -16,6 +16,7 @@ Antes de empezar:
 - Todos los endpoints, con sus campos y respuestas, están en `http://localhost:8000/docs/api`.
 - El CORS de Laravel ya permite llamadas desde `localhost:4200`.
 - Las respuestas vienen dentro de `data` (por ejemplo `{ "data": { "id": 1, … } }`), salvo `POST /auth/token`, que devuelve `token`, `is_new_user` y `user`. Los errores de validación devuelven `422` con `{ "message": …, "errors": { "campo": ["mensaje"] } }`.
+- Angular 22 necesita Node 24.15 o superior (o 22.22.3+).
 
 ## Archivos
 
@@ -29,25 +30,37 @@ frontend/src/
     ├── app.routes.ts                ← rutas /auth/callback y /privacidad
     ├── core/
     │   ├── models.ts                ← tipos de las respuestas
-    │   ├── auth.service.ts          ← login, logout y usuario
-    │   ├── auth.interceptor.ts      ← añade el token a cada petición
-    │   ├── auth.guard.ts            ← protege las páginas que necesitan sesión
-    │   └── reference-data.service.ts← ejemplo de servicio normal (idiomas, categorías)
+    │   ├── auth.ts                  ← servicio Auth: login, logout y usuario
+    │   ├── auth-interceptor.ts      ← añade el token a cada petición
+    │   ├── auth-guard.ts            ← protege las páginas que necesitan sesión
+    │   └── reference-data.ts        ← servicio ReferenceData (idiomas, categorías)
     └── pages/
         ├── home-component/          ← botón de login y mensajes de error
         ├── auth-callback/           ← canjea el código por el token
         └── privacy/                 ← aceptar la política la primera vez
 ```
 
-## 1. La URL de la API (environments)
+## Crear los archivos con el CLI
 
-Créalos con:
+Desde `frontend/`:
 
 ```bash
 ng generate environments
+ng generate service core/auth
+ng generate interceptor core/auth
+ng generate guard core/auth --implements CanActivate
+ng generate service core/reference-data
+ng generate component pages/auth-callback
+ng generate component pages/privacy
 ```
 
-El comando crea los dos archivos y configura `angular.json` para que `ng serve` use el de desarrollo y `ng build` el de producción. Después, rellénalos:
+- `models.ts` se crea a mano (son solo tipos).
+- El CLI también crea los `.spec.ts` (tests) y, en los componentes, un `.html` y un `.css` aparte. En los ejemplos la plantilla va dentro del `.ts` (`template:`) para que se vea todo junto; si preferís el `.html`, se mueve allí y se usa `templateUrl`.
+- Si un archivo se llama distinto (por ejemplo, porque se creó a mano), hay que cambiar también los `import` que lo usan: si no, sale el error `Cannot find module './core/…'`.
+
+## 1. La URL de la API (environments)
+
+`ng generate environments` crea los dos archivos y configura `angular.json` para que `ng serve` use el de desarrollo y `ng build` el de producción. Después, rellénalos:
 
 `frontend/src/environments/environment.development.ts`
 
@@ -76,7 +89,7 @@ import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
-import { authInterceptor } from './core/auth.interceptor';
+import { authInterceptor } from './core/auth-interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -138,7 +151,7 @@ export interface Category {
 
 ## 4. El servicio de autenticación
 
-`frontend/src/app/core/auth.service.ts`
+`frontend/src/app/core/auth.ts`
 
 ```ts
 import { HttpClient } from '@angular/common/http';
@@ -154,7 +167,7 @@ const TOKEN_KEY = 'librolibre.token';
  * The token lives in localStorage so the session survives a page reload.
  */
 @Injectable({ providedIn: 'root' })
-export class AuthService {
+export class Auth {
   private readonly http = inject(HttpClient);
   private readonly api = environment.apiUrl;
 
@@ -209,7 +222,7 @@ export class AuthService {
 
 ## 5. El interceptor
 
-`frontend/src/app/core/auth.interceptor.ts`
+`frontend/src/app/core/auth-interceptor.ts`
 
 ```ts
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
@@ -217,7 +230,7 @@ import { inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { catchError, throwError } from 'rxjs';
 import { environment } from '../../environments/environment';
-import { AuthService } from './auth.service';
+import { Auth } from './auth';
 
 /**
  * Runs on every HTTP request: adds the headers Laravel needs, so services never set them by hand.
@@ -229,7 +242,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
     return next(request);
   }
 
-  const auth = inject(AuthService);
+  const auth = inject(Auth);
   const router = inject(Router);
   const token = auth.token();
 
@@ -253,16 +266,16 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
 
 ## 6. Proteger páginas (guard)
 
-`frontend/src/app/core/auth.guard.ts`
+`frontend/src/app/core/auth-guard.ts`
 
 ```ts
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
-import { AuthService } from './auth.service';
+import { Auth } from './auth';
 
 /** For pages that need a session (profile, my books…): without a token, back to home. */
 export const authGuard: CanActivateFn = () => {
-  const auth = inject(AuthService);
+  const auth = inject(Auth);
   return auth.isLoggedIn() ? true : inject(Router).parseUrl('/');
 };
 ```
@@ -273,7 +286,7 @@ export const authGuard: CanActivateFn = () => {
 
 ```ts
 import { Routes } from '@angular/router';
-import { authGuard } from './core/auth.guard';
+import { authGuard } from './core/auth-guard';
 import { AuthCallback } from './pages/auth-callback/auth-callback';
 import { HomeComponent } from './pages/home-component/home-component';
 import { Privacy } from './pages/privacy/privacy';
@@ -305,7 +318,7 @@ export const routes: Routes = [
 ```ts
 import { Component, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
+import { Auth } from '../../core/auth';
 
 /** Laravel sends errors back here as /?error=… */
 const LOGIN_ERRORS: Record<string, string> = {
@@ -320,7 +333,7 @@ const LOGIN_ERRORS: Record<string, string> = {
   templateUrl: './home-component.html',
 })
 export class HomeComponent {
-  protected readonly auth = inject(AuthService);
+  protected readonly auth = inject(Auth);
 
   private readonly errorCode = inject(ActivatedRoute).snapshot.queryParamMap.get('error');
   protected readonly loginError = this.errorCode ? (LOGIN_ERRORS[this.errorCode] ?? 'No se ha podido entrar.') : null;
@@ -354,7 +367,7 @@ export class HomeComponent {
 ```ts
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
+import { Auth } from '../../core/auth';
 
 /**
  * Route /auth/callback: Laravel sends the browser here after Google, with ?code=…
@@ -375,7 +388,7 @@ import { AuthService } from '../../core/auth.service';
 export class AuthCallback implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly auth = inject(AuthService);
+  private readonly auth = inject(Auth);
 
   protected readonly error = signal<string | null>(null);
 
@@ -408,7 +421,7 @@ Si `is_new_user` es `true`, el usuario todavía no ha aceptado la política de p
 ```ts
 import { Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
+import { Auth } from '../../core/auth';
 
 /** First login (is_new_user: true): the user must accept the privacy policy. */
 @Component({
@@ -420,7 +433,7 @@ import { AuthService } from '../../core/auth.service';
   `,
 })
 export class Privacy {
-  private readonly auth = inject(AuthService);
+  private readonly auth = inject(Auth);
   private readonly router = inject(Router);
 
   accept(): void {
@@ -433,7 +446,7 @@ export class Privacy {
 
 Cualquier otro servicio sigue el mismo patrón: `HttpClient` + `environment.apiUrl` + quitar el `data`. No hay que poner cabeceras: las añade el interceptor.
 
-`frontend/src/app/core/reference-data.service.ts`
+`frontend/src/app/core/reference-data.ts`
 
 ```ts
 import { HttpClient } from '@angular/common/http';
@@ -444,7 +457,7 @@ import { ApiData, Category, Language } from './models';
 
 /** Example of a normal service: it calls the API and unwraps `data`. The interceptor adds the headers. */
 @Injectable({ providedIn: 'root' })
-export class ReferenceDataService {
+export class ReferenceData {
   private readonly http = inject(HttpClient);
   private readonly api = environment.apiUrl;
 
@@ -461,7 +474,7 @@ export class ReferenceDataService {
 Para usarlo en un componente:
 
 ```ts
-private readonly referenceData = inject(ReferenceDataService);
+private readonly referenceData = inject(ReferenceData);
 protected readonly languages = toSignal(this.referenceData.getLanguages(), { initialValue: [] });
 ```
 
