@@ -15,7 +15,7 @@ gantt
     title Planificación del Proyecto - Intercambio de Libros
     dateFormat  YYYY-MM-DD
     axisFormat %d/%m
-    
+
     section Fase 1: Definición
     Presentación Curso              :milestone, 2026-09-29, 0d
     Definición de Ideas Proyecto    :done, 2026-09-29, 2026-10-12
@@ -87,6 +87,22 @@ npm install
 npx ng serve               # http://localhost:4200
 ```
 
+## Estructura
+```
+librolibre/
+├── backend/          Laravel (API REST)
+├── frontend/         Angular
+│   ├── src/app/      Componentes, servicios, rutas y guards
+│   └── public/       Recursos estáticos (imágenes, favicon)
+├── docs/             Diagramas, análisis, contrato de la API
+└── .g
+```
+
+## Requisitos previos
+
+- **Node.js** en versión LTS (compatible con la versión de Angular del proyecto) y **npm**
+- **Angular CLI**: `npm install -g @angular/cli`
+
 ## Flujo de trabajo con Git
 
 - `main`: solo código estable (entregas).
@@ -104,7 +120,22 @@ git checkout -b feature/busqueda-por-isbn
 # ... trabajar, hacer commits ...
 git push -u origin feature/busqueda-por-isbn
 # abrir el pull request en GitHub hacia develop
+
+# Instalar los node_modules (Carpeta de librerias)
+cd frontend
+npm install
+
+# Crear nuevos componenetes
+ng g c pages/componente
+ng g s services/nombre
 ```
+
+#### Convenciones del front end
+
+- Componentes, servicios y rutas en `src/app/`, organizados por funcionalidad, los componentes irán dentro de la carpeta `src/app/components`
+   o la diferentes páginas dentro de `src/app/pages`.
+- Nombres de archivos en minúsculas con guiones (`ficha-libro.component.ts`)
+- Las llamadas a la API van siempre en servicios, nunca directamente en los componentes
 
 ### Mensajes de commit
 
