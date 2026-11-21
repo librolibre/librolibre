@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.testing.example
 
 # --- Laravel (backend) ---
 backend/vendor/
@@ -29,3 +30,7 @@ frontend/coverage/
 *.swp
 .DS_Store
 Thumbs.db
+
+# --- AI assistant files (personal, not shared) ---
+CLAUDE.md
+AGENTS.md
