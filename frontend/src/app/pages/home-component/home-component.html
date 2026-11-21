@@ -1,1 +1,11 @@
-<p>home-component works!</p>
+@if (loginError) {
+  <p>{{ loginError }}</p>
+}
+
+@if (auth.isLoggedIn()) {
+  <p>Has iniciado sesión.</p>
+  <button type="button" (click)="logout()">Cerrar sesión</button>
+} @else {
+  <!-- A normal link, not HttpClient: the whole browser goes to Laravel and then to Google -->
+  <a [href]="auth.googleLoginUrl">Entrar con Google</a>
+}
