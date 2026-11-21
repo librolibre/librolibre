@@ -22,7 +22,7 @@ class BusinessRuleException extends Exception implements ShouldntReport
      * @param  string  $message  text for the user, in Spanish
      */
     public function __construct(
-        // NO simplificar a $code
+        // Do not rename to $code: every PHP exception already has an integer $code property
         public readonly string $errorCode,
         string $message,
     ) {

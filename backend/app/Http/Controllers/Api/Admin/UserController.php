@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 
 /**
  * The admin panel's users. Only admins get here (the admin Gate, #32).
- * suspend is implemented (#36), through AccountService; the other methods are still stubs with fixed data.
+ * suspend and reactivate are implemented (#36), through AccountService; the other methods are still stubs with fixed data.
  * Stubs take scalar route parameters on purpose (route model binding would query the database and give 404);
  * implemented methods (and show) take the User model instead.
  */
@@ -348,31 +348,35 @@ class UserController extends Controller
     /**
      * Reactivar una cuenta
      *
-     * Un "reset de strikes", los libros vuelven a estar disponibles y el contador de strikes vuelve a cero
-     * (RN-26).
+     * RN-26. La cuenta vuelve a estar activa y el contador de strikes vuelve a cero; el historial de
+     * denuncias y acciones se conserva. Solo se puede reactivar una cuenta suspendida (si no, `409`
+     * con `INVALID_STATUS`). El usuario vuelve a entrar con Google: sus sesiones anteriores no se recuperan.
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
     #[Response(status: 409, description: 'La operación incumple una regla de negocio.', type: 'array{message: string, code: string}')]
-    public function reactivate(Request $request, int $user)
+    public function reactivate(AccountService $accounts, Request $request, User $user): AdminUserResource
     {
-        $request->validate([
+        $validated = $request->validate([
             /** Motivo de la decisión (queda registrado). */
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
-        return response()->json([
-            'data' => [
-                'id' => 3,
-                'username' => 'Ane',
-                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                'email' => 'ane@example.com',
-                'status' => 'active',
-                'role' => 'user',
-                'created_at' => '2026-11-15T10:00:00Z',
-                'books_count' => 3,
-                'average_rating' => 1.5,
-                'strikes' => 1,
-            ],
-        ]);
+        // return response()->json([
+        //     'data' => [
+        //         'id' => 3,
+        //         'username' => 'Ane',
+        //         'photo_url' => 'https://example.com/storage/photo_url.jpg',
+        //         'email' => 'ane@example.com',
+        //         'status' => 'active',
+        //         'role' => 'user',
+        //         'created_at' => '2026-11-15T10:00:00Z',
+        //         'books_count' => 3,
+        //         'average_rating' => 1.5,
+        //         'strikes' => 1,
+        //     ],
+        // ]);
+        $accounts->reactivate($user, $request->user(), $validated['reason']);
+
+        return new AdminUserResource($user->fresh());
     }
 }

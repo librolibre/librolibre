@@ -209,14 +209,95 @@ class SuspendAccountTest extends TestCase
     // ------------------------------------------------------------------
 
     /** Without a reason, reactivating returns 422 (the contract asks for a reason on both actions). */
-    public function test_reactivate_requires_a_reason(): void {}
+    public function test_reactivate_requires_a_reason(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $token = $admin->createToken('admin')->plainTextToken;
+        $user = User::factory()->create(['status' => 'suspended']);
 
-    /** Reactivating sets status to active and strikes to 0. */
-    public function test_reactivate_sets_status_active_and_strikes_to_zero(): void {}
+        $response = $this->withToken($token)->postJson('/api/admin/users/'.$user->id.'/reactivate');
+
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('reason');
+
+        // Nothing changed: still suspended, and nothing recorded
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'status' => 'suspended',
+        ]);
+        $this->assertDatabaseCount('admin_actions', 0);
+    }
+
+    /** Reactivating sets status to active and strikes to 0 (RN-26: a clean slate, or the next report would suspend them again). */
+    public function test_reactivate_sets_status_active_and_strikes_to_zero(): void
+    {
+        // Arrange: a user suspended after reaching 3 strikes
+        $admin = User::factory()->admin()->create();
+        $token = $admin->createToken('admin')->plainTextToken;
+        $user = User::factory()->create(['status' => 'suspended', 'strikes' => 3]);
+
+        // Act
+        $response = $this->withToken($token)->postJson('/api/admin/users/'.$user->id.'/reactivate', ['reason' => 'Revisado: no había motivo']);
+
+        // Assert: the response and the database
+        $response->assertOk();
+        $response->assertJsonPath('data.id', $user->id);
+        $response->assertJsonPath('data.status', 'active');
+        $response->assertJsonPath('data.strikes', 0);
+
+        $this->assertDatabaseHas('users', [
+            'id' => $user->id,
+            'status' => 'active',
+            'strikes' => 0,
+        ]);
+    }
 
     /** Each reactivation creates an admin_actions row too. */
-    public function test_reactivate_is_logged_in_admin_actions(): void {}
+    public function test_reactivate_is_logged_in_admin_actions(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $token = $admin->createToken('admin')->plainTextToken;
+        $user = User::factory()->create(['status' => 'suspended']);
 
-    /** Reactivating a user who is not suspended: 409 with code INVALID_STATUS (same rule as suspend). */
-    public function test_reactivating_an_active_user_returns_409_invalid_status(): void {}
+        $this->withToken($token)
+            ->postJson('/api/admin/users/'.$user->id.'/reactivate', ['reason' => 'Revisado: no había motivo'])
+            ->assertOk();
+
+        $this->assertDatabaseCount('admin_actions', 1);
+        $this->assertDatabaseHas('admin_actions', [
+            'admin_id' => $admin->id,
+            'action' => 'reactivate_user',
+            'target_type' => 'user',
+            'target_id' => $user->id,
+            'reason' => 'Revisado: no había motivo',
+        ]);
+    }
+
+    /**
+     * Only a suspended user can be reactivated: otherwise 409 with code INVALID_STATUS.
+     * deleted matters most: reactivating an anonymised account would undo the deletion (#29).
+     */
+    public function test_reactivating_a_user_who_is_not_suspended_returns_409_invalid_status(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $token = $admin->createToken('admin')->plainTextToken;
+
+        foreach (['active', 'deleted'] as $status) {
+            $user = User::factory()->create(['status' => $status]);
+
+            $response = $this->withToken($token)->postJson('/api/admin/users/'.$user->id.'/reactivate', ['reason' => 'Revisado']);
+
+            $response->assertStatus(409);
+            $response->assertJsonPath('code', 'INVALID_STATUS');
+            $response->assertJsonStructure(['message', 'code']);
+
+            // Nothing changed for this user
+            $this->assertDatabaseHas('users', [
+                'id' => $user->id,
+                'status' => $status,
+            ]);
+        }
+
+        $this->assertDatabaseCount('admin_actions', 0);
+    }
 }
