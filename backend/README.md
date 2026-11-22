@@ -75,6 +75,28 @@ php artisan test                  # tests
 php artisan migrate:fresh --seed  # rehacer la base de datos LOCAL desde cero
 ```
 
+## Datos de prueba (#14)
+
+Unos 20 usuarios (2 administradores, 2 suspendidos, algunos bloqueos) y unos 40 libros reales con portada,
+para que el front end y la demo tengan algo que enseñar. Los datos están en `database/seeders/demo/`.
+
+```bash
+php artisan db:seed --class=DemoSeeder          # cargarlos (o actualizarlos; no duplica nada)
+php artisan demo:token ane@demo.librolibre.test # un token para actuar como ese usuario
+php artisan demo:clear                          # borrarlos todos (pide confirmación)
+```
+
+- **Van a la base de datos a la que apunte tu `.env`.** Si apunta a Neon, los ve todo el equipo.
+- **Todo dato de prueba está marcado:** email `@demo.librolibre.test` y `google_id` `demo-…`. No se puede entrar
+  con Google como ellos: para probar como administrador, como usuario suspendido, etc., usa `demo:token` y pega
+  el token en el panel de `tools/fake-front`, en Swagger (`/docs/api`) o en Angular.
+- `demo:token` solo funciona con usuarios de prueba; nunca con una cuenta real.
+- **Ni el seeder ni `demo:clear` tocan usuarios reales.** Antes de publicar la aplicación, hay que ejecutar
+  `demo:clear` en la base de datos de producción (#80).
+- Usuarios: `laura` e `iker` (admin); `ane`, `mikel`, `nerea`, `jon`, `maria`, `amaia`, `unai`, `maite`, `asier`,
+  `carlos`, `pablo`, `leire`, `gorka`, `irati`, `xabier`, `itziar`; `lucia` y `sergio` (suspendidos). El email es
+  `<nombre>@demo.librolibre.test`.
+
 ## Notas por sistema operativo
 
 ### macOS
