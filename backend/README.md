@@ -97,6 +97,20 @@ php artisan demo:clear                          # borrarlos todos (pide confirma
   `carlos`, `pablo`, `leire`, `gorka`, `irati`, `xabier`, `itziar`; `lucia` y `sergio` (suspendidos). El email es
   `<nombre>@demo.librolibre.test`.
 
+## Administradores (#32)
+
+El rol **no se puede cambiar desde la API**: solo con este comando, en el servidor (o con tu `.env` apuntando a
+la base de datos que toque).
+
+```bash
+php artisan user:role alguien@ikaslea.birt.eus admin   # hacerla administradora
+php artisan user:role alguien@ikaslea.birt.eus user    # quitarle el rol
+```
+
+- La persona tiene que haber **entrado con Google al menos una vez** (si no, su cuenta no existe todavía).
+- No se puede quitar el rol al **último administrador**.
+- Un administrador no se puede suspender: para probar como usuario suspendido, usa los datos de prueba (`demo:token`).
+
 ## Notas por sistema operativo
 
 ### macOS
