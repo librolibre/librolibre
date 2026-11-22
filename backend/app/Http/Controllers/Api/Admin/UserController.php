@@ -9,6 +9,7 @@ use App\Services\AccountService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
  * The admin panel's users. Only admins get here (the admin Gate, #32).
@@ -25,7 +26,7 @@ class UserController extends Controller
      * RF-34, CU-18. Solo administradores.
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
-    public function index(Request $request)
+    public function index(Request $request): AnonymousResourceCollection
     {
         $request->validate([
             /** Nombre o email. */
@@ -34,34 +35,18 @@ class UserController extends Controller
             'page' => ['sometimes', 'integer', 'min:1'],
         ]);
 
-        return response()->json([
-            'data' => [
-                [
-                    'id' => 3,
-                    'username' => 'Ane',
-                    'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                    'email' => 'ane@example.com',
-                    'status' => 'active',
-                    'role' => 'user',
-                    'created_at' => '2026-11-15T10:00:00Z',
-                    'books_count' => 3,
-                    'average_rating' => 1.5,
-                    'strikes' => 1,
-                ],
-            ],
-            'links' => [
-                'first' => 'http://localhost:8000/api/admin/users?page=1',
-                'last' => 'http://localhost:8000/api/admin/users?page=5',
-                'prev' => 'http://localhost:8000/api/admin/users?page=1',
-                'next' => 'http://localhost:8000/api/admin/users?page=3',
-            ],
-            'meta' => [
-                'current_page' => 1,
-                'last_page' => 5,
-                'per_page' => 20,
-                'total' => 93,
-            ],
-        ]);
+        $users = User::query()
+            ->with('profile')
+            ->when($request->q, fn ($query, $q) => $query->where(function ($w) use ($q) {
+                $w->where('username', 'like', "%{$q}%")
+                ->orWhere('email', 'like', "%{$q}%");
+        }))
+        ->when($request->status, fn ($query, $status) => $query->where('status', $status))
+        ->withCount('books')
+        ->orderBy('username')
+        ->paginate(20);
+
+        return AdminUserResource::collection($users);
     }
 
     /**
