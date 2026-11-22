@@ -703,31 +703,7 @@ paths:
         '401': { $ref: '#/components/responses/Unauthenticated' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
-  /admin/users/{user}/suspend:
-    post:
-      tags: [Admin]
-      summary: Suspender una cuenta
-      description: RN-17. No se puede suspender a un admin, ni por supuesto a uno mismo (RN-19).
-      parameters: [{ $ref: '#/components/parameters/UserId' }]
-      requestBody: { $ref: '#/components/requestBodies/Reason' }
-      responses:
-        '200': { $ref: '#/components/responses/AdminUserOk' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
-        '422': { $ref: '#/components/responses/ValidationFailed' }
-  /admin/users/{user}/reactivate:
-    post:
-      tags: [Admin]
-      summary: Reactivar una cuenta
-      description: Un "reset de strikes", los libros vuelven a estar disponibles y el contador de strikes vuelve a cero (RN-26).
-      parameters: [{ $ref: '#/components/parameters/UserId' }]
-      requestBody: { $ref: '#/components/requestBodies/Reason' }
-      responses:
-        '200': { $ref: '#/components/responses/AdminUserOk' }
-        '401': { $ref: '#/components/responses/Unauthenticated' }
-        '403': { $ref: '#/components/responses/Forbidden' }
-        '409': { $ref: '#/components/responses/BusinessRuleViolation' }
+  # /admin/users/{user}/suspend y /admin/users/{user}/reactivate ya están programados: los documenta Scramble (#36).
   /admin/books:
     get:
       tags: [Admin]
@@ -952,14 +928,15 @@ components:
             type: object
             properties:
               data: { $ref: '#/components/schemas/Offer' }
-    AdminUserOk:
-      description: Usuario actualizado.
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              data: { $ref: '#/components/schemas/AdminUser' }
+    # AdminUserOk solo lo usaban suspend y reactivate, que ahora documenta Scramble (#36).
+    # AdminUserOk:
+    #   description: Usuario actualizado.
+    #   content:
+    #     application/json:
+    #       schema:
+    #         type: object
+    #         properties:
+    #           data: { $ref: '#/components/schemas/AdminUser' }
     ReportOk:
       description: Denuncia.
       content:
