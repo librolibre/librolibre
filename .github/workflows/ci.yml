@@ -78,9 +78,21 @@ jobs:
           extensions: mbstring, pdo_pgsql
           coverage: none
 
+      # The tests only load the files they use, so a file with a syntax error and no test passes them
+      # (that is how a broken controller reached develop in #116). php -l reads every file, test or no test.
+      - name: Check PHP syntax
+        if: steps.check.outputs.exists == 'true'
+        run: find app bootstrap config database routes tests -name '*.php' -print0 | xargs -0 -n1 -P4 php -l > /dev/null
+
       - name: Install dependencies
         if: steps.check.outputs.exists == 'true'
         run: composer install --no-interaction --prefer-dist --no-progress
+
+      # Fails if an installed package has a known security vulnerability (checked against composer.lock).
+      # To fix: composer update <package> and commit composer.lock.
+      - name: Check packages for vulnerabilities
+        if: steps.check.outputs.exists == 'true'
+        run: composer audit --no-interaction
 
       - name: Prepare environment
         if: steps.check.outputs.exists == 'true'
