@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>LibroLibre · volviendo de Google</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 40px auto; padding: 0 16px; }
+    pre { background: #f4f4f4; padding: 12px; border-radius: 6px; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+    .ok { color: #0a7a2f; } .ko { color: #9b1c1c; }
+  </style>
+</head>
+<body>
+  <h1>Volviendo de Google</h1>
+  <ol id="steps"></ol>
+  <p><a href="/panel/">Ir al panel de pruebas</a> · <a href="/">Volver al inicio</a></p>
+
+  <script>
+    const API = 'http://localhost:8000/api';
+    const steps = document.getElementById('steps');
+
+    function step(title, ok, data) {
+      const li = document.createElement('li');
+      li.innerHTML = `<strong class="${ok ? 'ok' : 'ko'}">${title}</strong>`;
+      if (data !== undefined) {
+        const pre = document.createElement('pre');
+        pre.textContent = typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+        li.appendChild(pre);
+      }
+      steps.appendChild(li);
+    }
+
+    async function run() {
+      // 1. Read the one-time code from the URL
+      const code = new URLSearchParams(location.search).get('code');
+      if (!code) return step('No hay ?code= en la URL', false);
+      step('1. Código recibido del callback', true, code);
+
+      // 2. Swap it for a Sanctum token (what Angular will do)
+      const res = await fetch(`${API}/auth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const body = await res.json();
+      step(`2. POST /auth/token → ${res.status}`, res.ok, body);
+      if (!res.ok) return;
+
+      // Keep the token for the test panel (/panel/)
+      localStorage.setItem('token', body.token);
+
+      // Remove the code from the address bar, as Angular should
+      history.replaceState(null, '', '/auth/callback');
+
+      // 3. Use the token on a protected route
+      const me = await fetch(`${API}/me`, {
+        headers: { 'Accept': 'application/json', 'Authorization': `Bearer ${body.token}` },
+      });
+      step(`3. GET /me con el token → ${me.status}`, me.ok, await me.json());
+
+      // 4. Same code again: must fail (single use)
+      const again = await fetch(`${API}/auth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      step(`4. Mismo código otra vez → ${again.status} (se espera 422)`, again.status === 422, await again.json());
+    }
+
+    run().catch(e => step('Error de red (¿está php artisan serve en marcha? ¿CORS?)', false, String(e)));
+  </script>
+</body>
+</html>

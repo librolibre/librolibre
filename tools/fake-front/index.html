@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>LibroLibre · login de prueba</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 560px; margin: 60px auto; padding: 0 16px; }
+    a.btn { display: inline-block; padding: 12px 20px; background: #1a73e8; color: #fff; border-radius: 6px; text-decoration: none; }
+    .error { background: #fde8e8; color: #9b1c1c; padding: 12px; border-radius: 6px; margin-bottom: 20px; }
+    .note { color: #666; font-size: 14px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+  <h1>LibroLibre</h1>
+  <p>Página de prueba que hace de Angular (herramienta de desarrollo, <code>tools/fake-front</code>). <a href="/panel/">Panel de pruebas</a></p>
+
+  <div id="error" class="error" hidden></div>
+
+  <!-- A plain link, not an HTTP call: the whole browser goes to Laravel, then to Google -->
+  <a class="btn" href="http://localhost:8000/api/auth/google/redirect">Entrar con Google</a>
+
+  <p class="note">
+    Necesita <code>php artisan serve</code> en el puerto 8000 y esta carpeta servida en el 4200.
+  </p>
+
+  <script>
+    // The callback sends errors back here: /?error=cancelled or /?error=suspended
+    const messages = {
+      cancelled: 'Has cancelado el acceso en Google.',
+      suspended: 'Tu cuenta está suspendida.',
+    };
+    const error = new URLSearchParams(location.search).get('error');
+    if (error) {
+      const box = document.getElementById('error');
+      box.textContent = messages[error] ?? 'Error: ' + error;
+      box.hidden = false;
+    }
+  </script>
+</body>
+</html>

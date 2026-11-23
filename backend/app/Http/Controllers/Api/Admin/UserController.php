@@ -38,13 +38,13 @@ class UserController extends Controller
         $users = User::query()
             ->with('profile')
             ->when($request->q, fn ($query, $q) => $query->where(function ($w) use ($q) {
-                $w->where('username', 'like', "%{$q}%")
-                ->orWhere('email', 'like', "%{$q}%");
-        }))
-        ->when($request->status, fn ($query, $status) => $query->where('status', $status))
-        ->withCount('books')
-        ->orderBy('username')
-        ->paginate(20);
+                $w->where('username', 'ilike', "%{$q}%")
+                    ->orWhere('email', 'ilike', "%{$q}%");
+            }))
+            ->when($request->status, fn ($query, $status) => $query->where('status', $status))
+            ->withCount('books')
+            ->orderBy('username')
+            ->paginate(20);
 
         return AdminUserResource::collection($users);
     }

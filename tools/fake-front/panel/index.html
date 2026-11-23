@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>LibroLibre · panel de pruebas</title>
+</head>
+<body>
+  <h1>Panel de pruebas de la API</h1>
+  <p>Herramienta de desarrollo (<code>tools/fake-front</code>). API: <code>http://localhost:8000/api</code> · <a href="/">Entrar con Google</a></p>
+
+  <h2>Token</h2>
+  <p>
+    <input id="token" size="70" placeholder="Bearer token (se rellena solo después de entrar con Google)">
+    <button onclick="saveToken()">Guardar</button>
+    <button onclick="clearToken()">Borrar</button>
+  </p>
+
+  <h2>Respuesta</h2>
+  <pre id="out">(nada todavía)</pre>
+  <p id="photo"></p>
+
+  <h2>Mi cuenta</h2>
+  <p><button onclick="call('GET', '/me')">GET /me</button></p>
+
+  <fieldset>
+    <legend>PATCH /me (solo se envían los campos rellenados)</legend>
+    <p>username <input id="username"></p>
+    <p>description <textarea id="description" rows="2" cols="50"></textarea></p>
+    <p>postal_code <input id="postal_code" size="6"> (sin coordenadas → Google Maps)</p>
+    <p>latitude <input id="latitude" size="8"> longitude <input id="longitude" size="8"> (opcional)</p>
+    <p>languages <input id="languages" placeholder="es,eu"> (códigos separados por comas)</p>
+    <p><button onclick="patchMe()">PATCH /me</button></p>
+  </fieldset>
+
+  <p><button onclick="call('POST', '/me/privacy-consent')">POST /me/privacy-consent</button></p>
+
+  <fieldset>
+    <legend>POST /me/photo</legend>
+    <input type="file" id="photoFile" accept="image/jpeg,image/png">
+    <button onclick="uploadPhoto()">Subir foto</button>
+  </fieldset>
+
+  <p>
+    <button onclick="call('POST', '/auth/logout')">POST /auth/logout</button>
+    <button onclick="deleteMe()">DELETE /me (elimina la cuenta)</button>
+  </p>
+
+  <h2>Otros usuarios</h2>
+  <p>
+    GET /users/<input id="userId" size="5" value="1">
+    <label><input type="checkbox" id="asVisitor"> como visitante (sin token)</label>
+    <button onclick="getUser()">Ver perfil</button>
+  </p>
+
+  <h2>Datos de referencia (sin token)</h2>
+  <p>
+    <button onclick="call('GET', '/languages', null, false)">GET /languages</button>
+    <button onclick="call('GET', '/categories', null, false)">GET /categories</button>
+  </p>
+
+  <script>
+    const API = 'http://localhost:8000/api';
+    const tokenInput = document.getElementById('token');
+    tokenInput.value = localStorage.getItem('token') ?? '';
+
+    function saveToken() { localStorage.setItem('token', tokenInput.value.trim()); show('Token guardado.'); }
+    function clearToken() { localStorage.removeItem('token'); tokenInput.value = ''; show('Token borrado.'); }
+
+    function show(text) { document.getElementById('out').textContent = text; }
+
+    // One helper for every request: shows the method, URL, status and JSON body
+    async function call(method, path, body = null, withToken = true) {
+      const headers = { 'Accept': 'application/json' };
+      if (withToken && tokenInput.value.trim()) headers['Authorization'] = 'Bearer ' + tokenInput.value.trim();
+      if (body && !(body instanceof FormData)) {
+        headers['Content-Type'] = 'application/json';
+        body = JSON.stringify(body);
+      }
+
+      show(`${method} ${path} …`);
+      try {
+        const res = await fetch(API + path, { method, headers, body });
+        const text = await res.text();
+        let data = text;
+        try { data = JSON.stringify(JSON.parse(text), null, 2); } catch {}
+        show(`${method} ${path} → ${res.status}\n\n${data || '(sin cuerpo)'}`);
+
+        // Show the profile photo when the response has one
+        const photo = document.getElementById('photo');
+        try {
+          const url = JSON.parse(text)?.data?.photo_url;
+          photo.innerHTML = url ? `<img src="${url}" alt="foto de perfil" width="120"><br>${url}` : '';
+        } catch { photo.innerHTML = ''; }
+
+        return res;
+      } catch (e) {
+        show(`${method} ${path} → error de red (¿está php artisan serve en el puerto 8000?)\n\n${e}`);
+      }
+    }
+
+    function patchMe() {
+      const body = {};
+      for (const field of ['username', 'description', 'postal_code']) {
+        const value = document.getElementById(field).value.trim();
+        if (value !== '') body[field] = value;
+      }
+      const lat = document.getElementById('latitude').value.trim();
+      const lng = document.getElementById('longitude').value.trim();
+      if (lat !== '' && lng !== '') body.location = { latitude: Number(lat), longitude: Number(lng) };
+      const languages = document.getElementById('languages').value.trim();
+      if (languages !== '') body.languages = languages.split(',').map(code => code.trim());
+      call('PATCH', '/me', body);
+    }
+
+    function uploadPhoto() {
+      const file = document.getElementById('photoFile').files[0];
+      if (!file) return show('Elige una imagen primero.');
+      const form = new FormData();
+      form.append('photo', file);
+      call('POST', '/me/photo', form);
+    }
+
+    async function deleteMe() {
+      if (!confirm('¿Seguro? La cuenta se anonimiza y el token deja de valer.')) return;
+      const res = await call('DELETE', '/me');
+      if (res?.status === 204) clearToken();
+    }
+
+    function getUser() {
+      const id = document.getElementById('userId').value.trim();
+      call('GET', '/users/' + id, null, !document.getElementById('asVisitor').checked);
+    }
+  </script>
+</body>
+</html>
