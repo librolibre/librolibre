@@ -61,17 +61,17 @@ class UserController extends Controller
     {
         $user->load([
             'profile',
-            'books' => fn ($q) => $q->with(['categories', 'photos', 'owner.profile'])->latest(),
-            'offers' => fn ($q) => $q->with([
-                'requestedBook.categories',
-                'requestedBook.photos',
-                'requestedBook.owner.profile',
-                'offeredBook.categories',
-                'offeredBook.photos',
-                'offeredBook.owner.profile',
-                'requester',
-                'owner',
-            ])->latest(),
+            'books' => fn ($q) => $q->with(['categories', 'photos', 'user.profile'])->latest(),
+            //'offers' => fn ($q) => $q->with([
+            //    'requestedBook.categories',
+            //    'requestedBook.photos',
+            //    'requestedBook.owner.profile',
+            //    'offeredBook.categories',
+            //    'offeredBook.photos',
+            //    'offeredBook.owner.profile',
+            //    'requester',
+            //    'owner',
+            //])->latest(),
             'ratingsReceived' => fn ($q) => $q->with('rater')->latest(),
             //'reportsReceived' => fn ($q) => $q->with([
             //    'reporter',
