@@ -60,11 +60,12 @@ class AdminUserDetailResource extends JsonResource
             'strikes' => $this->strikes,
 
             /** Libros del usuario. */
-            'books' => $this->whenLoaded('books', fn () => $this->books->map(
-                fn ($book) => $this->transformBook($book, $photosDisk, $request)
-            )->values()),
+            //'books' => $this->whenLoaded('books', fn () => $this->books->map(
+            //    fn ($book) => $this->transformBook($book, $photosDisk, $request)
+            //)->values()),
 
             /** Ofertas en las que participa el usuario. */
+            /*
             'offers' => $this->whenLoaded('offers', fn () => $this->offers->map(fn ($offer) => [
                 'id' => $offer->id,
                 'type' => $offer->type,
@@ -96,6 +97,7 @@ class AdminUserDetailResource extends JsonResource
                 'created_at' => $offer->created_at,
                 'updated_at' => $offer->updated_at,
             ])->values()),
+            */
 
             /** Valoraciones recibidas por el usuario. */
             'ratings' => $this->whenLoaded('ratingsReceived', fn () => $this->ratingsReceived->map(fn ($rating) => [
@@ -113,6 +115,7 @@ class AdminUserDetailResource extends JsonResource
             ])->values()),
 
             /** Denuncias recibidas por el usuario. */
+            /*
             'reports_received' => $this->whenLoaded('reportsReceived', fn () => $this->reportsReceived->map(fn ($report) => [
                 'id' => $report->id,
                 'reporter' => $report->reporter ? [
@@ -139,18 +142,7 @@ class AdminUserDetailResource extends JsonResource
                 ] : null,
                 'created_at' => $report->created_at,
             ])->values()),
-
-            /** Acciones de moderación aplicadas sobre el usuario. */
-            'actions' => $this->whenLoaded('adminActions', fn () => $this->adminActions->map(fn ($action) => [
-                'action' => $action->action,
-                'admin' => $action->admin ? [
-                    'id' => $action->admin->id,
-                    'username' => $action->admin->username,
-                    'photo_url' => $photoUrl($action->admin->photo_path),
-                ] : null,
-                'reason' => $action->reason,
-                'created_at' => $action->created_at,
-            ])->values()),
+            */
         ];
     }
 }
