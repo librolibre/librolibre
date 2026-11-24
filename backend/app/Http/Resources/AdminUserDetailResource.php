@@ -144,18 +144,6 @@ class AdminUserDetailResource extends JsonResource
             ])->values()),
             */
 
-            /** Acciones de moderación aplicadas sobre el usuario. */
-            'actions' => $this->whenLoaded('adminActions', fn () => $this->adminActions->map(fn ($action) => [
-                'action' => $action->action,
-                'admin' => $action->admin ? [
-                    'id' => $action->admin->id,
-                    'username' => $action->admin->username,
-                    'photo_url' => $photoUrl($action->admin->photo_path),
-                ] : null,
-                'reason' => $action->reason,
-                'created_at' => $action->created_at,
-            ])->values()),
->>>>>>> develop
         ];
     }
 }
