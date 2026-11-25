@@ -10,4 +10,6 @@ export const routes: Routes = [
   { path: 'login', component: LoginComponent },
   { path: 'privacidad', component: Privacy, canActivate: [authGuard] },
   { path: 'auth/callback', component: AuthCallback },
+  // Las rutas que no existen vuelven al inicio - Laurence
+  { path: '**', redirectTo: '' },
 ];

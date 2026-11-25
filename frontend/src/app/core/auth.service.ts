@@ -42,8 +42,12 @@ export class AuthService {
     );
   }
 
+  // Marca la política como aceptada en el usuario cargado - Laurence
   acceptPrivacy(): Observable<void> {
-    return this.http.post<void>(`${this.api}/me/privacy-consent`, {});
+    // return this.http.post<void>(`${this.api}/me/privacy-consent`, {});
+    return this.http
+      .post<void>(`${this.api}/me/privacy-consent`, {})
+      .pipe(tap(() => this.user.update((user) => (user ? { ...user, privacy_accepted: true } : user))));
   }
 
   /** Revokes the token in Laravel; the local session is cleared even if that call fails. */
