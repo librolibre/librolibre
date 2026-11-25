@@ -36,7 +36,9 @@ export class AuthCallback implements OnInit {
     this.auth.exchangeCode(code).subscribe({
       next: (response) => {
         // replaceUrl: the address with ?code=… is not kept in the browser history
-        const target = response.is_new_user ? '/privacidad' : '/';
+        // const target = response.is_new_user ? '/privacidad' : '/';
+        // Se mira privacy_accepted, no is_new_user - Laurence
+        const target = response.user.privacy_accepted ? '/' : '/privacidad';
         this.router.navigateByUrl(target, { replaceUrl: true });
       },
       error: () => this.error.set('El código no es válido o ha caducado. Vuelve a intentarlo.'),

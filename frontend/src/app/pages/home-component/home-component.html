@@ -1,5 +1,10 @@
 <app-header />
 <main class="contenedor">
+  <!-- Aviso de cuenta suspendida - Laurence -->
+  @if (suspended) {
+    <p class="notice" role="alert">Tu cuenta está suspendida y no puedes entrar.</p>
+  }
+
   <section class="banner">
     <div class="banner-contenido">
       <h1>LibroLibre</h1>
