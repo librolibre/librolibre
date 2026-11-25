@@ -5,6 +5,7 @@ namespace Database\Factories;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
+
 // use Illuminate\Support\Facades\Hash;
 // use Illuminate\Support\Str;
 
@@ -31,8 +32,18 @@ class UserFactory extends Factory
             'profile_id' => Profile::firstOrCreate(['code' => 'user'], ['name' => 'Usuario'])->id,
             'email' => fake()->unique()->safeEmail(),
             // We don't use passwords
-            //'password' => static::$password ??= Hash::make('password'),
+            // 'password' => static::$password ??= Hash::make('password'),
         ];
+    }
+
+    /**
+     * A user with the admin profile: User::factory()->admin()->create().
+     */
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'profile_id' => Profile::firstOrCreate(['code' => 'admin'], ['name' => 'Administrador'])->id,
+        ]);
     }
 
     /**

@@ -3,14 +3,20 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\AdminUserResource;
+use App\Http\Resources\AdminUserDetailResource;
+use App\Models\User;
+use App\Services\AccountService;
 use Dedoc\Scramble\Attributes\Group;
 use Dedoc\Scramble\Attributes\Response;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 /**
- * STUB: todos los métodos devuelven datos fijos. No hay lógica ni base de datos.
- * Los parámetros de ruta son escalares (no modelos) a propósito: con route model binding
- * Laravel iría a la base de datos y devolvería 404.
+ * The admin panel's users. Only admins get here (the admin Gate, #32).
+ * suspend and reactivate are implemented (#36), through AccountService; the other methods are still stubs with fixed data.
+ * Stubs take scalar route parameters on purpose (route model binding would query the database and give 404);
+ * implemented methods (and show) take the User model instead.
  */
 #[Group('Admin')]
 class UserController extends Controller
@@ -21,7 +27,7 @@ class UserController extends Controller
      * RF-34, CU-18. Solo administradores.
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
-    public function index(Request $request)
+    public function index(Request $request): AnonymousResourceCollection
     {
         $request->validate([
             /** Nombre o email. */
@@ -30,34 +36,18 @@ class UserController extends Controller
             'page' => ['sometimes', 'integer', 'min:1'],
         ]);
 
-        return response()->json([
-            'data' => [
-                [
-                    'id' => 3,
-                    'username' => 'Ane',
-                    'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                    'email' => 'ane@example.com',
-                    'status' => 'active',
-                    'role' => 'user',
-                    'created_at' => '2026-11-15T10:00:00Z',
-                    'books_count' => 3,
-                    'average_rating' => 1.5,
-                    'strikes' => 1,
-                ],
-            ],
-            'links' => [
-                'first' => 'http://localhost:8000/api/admin/users?page=1',
-                'last' => 'http://localhost:8000/api/admin/users?page=5',
-                'prev' => 'http://localhost:8000/api/admin/users?page=1',
-                'next' => 'http://localhost:8000/api/admin/users?page=3',
-            ],
-            'meta' => [
-                'current_page' => 1,
-                'last_page' => 5,
-                'per_page' => 20,
-                'total' => 93,
-            ],
-        ]);
+        $users = User::query()
+            ->with('profile')
+            ->when($request->q, fn ($query, $q) => $query->where(function ($w) use ($q) {
+                $w->where('username', 'ilike', "%{$q}%")
+                    ->orWhere('email', 'ilike', "%{$q}%");
+            }))
+            ->when($request->status, fn ($query, $status) => $query->where('status', $status))
+            ->withCount('books')
+            ->orderBy('username')
+            ->paginate(20);
+
+        return AdminUserResource::collection($users);
     }
 
     /**
@@ -67,259 +57,31 @@ class UserController extends Controller
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
     #[Response(status: 404, description: 'El recurso no existe o no es visible para el usuario.', type: 'array{message: string}')]
-    public function show(int $user)
+    public function show(User $user)
     {
-        return response()->json([
-            'data' => [
-                'id' => 3,
-                'username' => 'Ane',
-                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                'email' => 'ane@example.com',
-                'status' => 'active',
-                'role' => 'user',
-                'created_at' => '2026-11-15T10:00:00Z',
-                'books_count' => 3,
-                'average_rating' => 1.5,
-                'strikes' => 1,
-                'books' => [
-                    [
-                        'id' => 42,
-                        'isbn' => '9788420412146',
-                        'title' => 'Cien años de soledad',
-                        'author' => 'Gabriel García Márquez',
-                        'publisher' => 'Alfaguara',
-                        'publication_year' => 1,
-                        'publication_place' => 'Madrid',
-                        'edition_name' => 'Edición conmemorativa',
-                        'page_count' => 3,
-                        'dimensions' => '21 x 14 cm',
-                        'weight' => 1,
-                        'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
-                        'categories' => [
-                            [
-                                'code' => 'novel',
-                                'name' => 'Novela',
-                            ],
-                        ],
-                        'language' => 'es',
-                        'binding_type' => 'paperback',
-                        'condition' => 'new',
-                        'defects' => ['underlining'],
-                        'is_donation' => true,
-                        'notes' => 'Algún subrayado a lápiz en los primeros capítulos.',
-                        'photos' => [
-                            [
-                                'id' => 1,
-                                'url' => 'https://example.com/storage/url.jpg',
-                            ],
-                        ],
-                        'status' => 'available',
-                        'distance_km' => 1.2,
-                        'owner' => [
-                            'id' => 3,
-                            'username' => 'Ane',
-                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                            'description' => 'Lectora de novela y ensayo.',
-                            'languages' => ['es', 'eu'],
-                            'average_rating' => 4.6,
-                            'ratings_count' => 5,
-                            'exchanges_count' => 7,
-                            'member_since' => '2026-11-15T10:00:00Z',
-                            'blocked_by_me' => false,
-                        ],
-                        'is_mine' => false,
-                        'created_at' => '2026-11-15T10:00:00Z',
-                    ],
-                ],
-                'offers' => [
-                    [
-                        'id' => 15,
-                        'type' => 'trade',
-                        'status' => 'pending',
-                        'requested_book' => [
-                            'id' => 42,
-                            'isbn' => '9788420412146',
-                            'title' => 'Cien años de soledad',
-                            'author' => 'Gabriel García Márquez',
-                            'publisher' => 'Alfaguara',
-                            'publication_year' => 1,
-                            'publication_place' => 'Madrid',
-                            'edition_name' => 'Edición conmemorativa',
-                            'page_count' => 3,
-                            'dimensions' => '21 x 14 cm',
-                            'weight' => 1,
-                            'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
-                            'categories' => [
-                                [
-                                    'code' => 'novel',
-                                    'name' => 'Novela',
-                                ],
-                            ],
-                            'language' => 'es',
-                            'binding_type' => 'paperback',
-                            'condition' => 'new',
-                            'defects' => ['underlining'],
-                            'is_donation' => true,
-                            'notes' => 'Algún subrayado a lápiz en los primeros capítulos.',
-                            'photos' => [
-                                [
-                                    'id' => 1,
-                                    'url' => 'https://example.com/storage/url.jpg',
-                                ],
-                            ],
-                            'status' => 'available',
-                            'distance_km' => 1.2,
-                            'owner' => [
-                                'id' => 3,
-                                'username' => 'Ane',
-                                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                                'description' => 'Lectora de novela y ensayo.',
-                                'languages' => ['es', 'eu'],
-                                'average_rating' => 4.6,
-                                'ratings_count' => 5,
-                                'exchanges_count' => 7,
-                                'member_since' => '2026-11-15T10:00:00Z',
-                                'blocked_by_me' => false,
-                            ],
-                            'is_mine' => false,
-                            'created_at' => '2026-11-15T10:00:00Z',
-                        ],
-                        'offered_book' => [
-                            'id' => 42,
-                            'isbn' => '9788420412146',
-                            'title' => 'Cien años de soledad',
-                            'author' => 'Gabriel García Márquez',
-                            'publisher' => 'Alfaguara',
-                            'publication_year' => 1,
-                            'publication_place' => 'Madrid',
-                            'edition_name' => 'Edición conmemorativa',
-                            'page_count' => 3,
-                            'dimensions' => '21 x 14 cm',
-                            'weight' => 1,
-                            'cover_image_url' => 'https://example.com/storage/cover_image_url.jpg',
-                            'categories' => [
-                                [
-                                    'code' => 'novel',
-                                    'name' => 'Novela',
-                                ],
-                            ],
-                            'language' => 'es',
-                            'binding_type' => 'paperback',
-                            'condition' => 'new',
-                            'defects' => ['underlining'],
-                            'is_donation' => true,
-                            'notes' => 'Algún subrayado a lápiz en los primeros capítulos.',
-                            'photos' => [
-                                [
-                                    'id' => 1,
-                                    'url' => 'https://example.com/storage/url.jpg',
-                                ],
-                            ],
-                            'status' => 'available',
-                            'distance_km' => 1.2,
-                            'owner' => [
-                                'id' => 3,
-                                'username' => 'Ane',
-                                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                                'description' => 'Lectora de novela y ensayo.',
-                                'languages' => ['es', 'eu'],
-                                'average_rating' => 4.6,
-                                'ratings_count' => 5,
-                                'exchanges_count' => 7,
-                                'member_since' => '2026-11-15T10:00:00Z',
-                                'blocked_by_me' => false,
-                            ],
-                            'is_mine' => false,
-                            'created_at' => '2026-11-15T10:00:00Z',
-                        ],
-                        'requester' => [
-                            'id' => 3,
-                            'username' => 'Ane',
-                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                        ],
-                        'owner' => [
-                            'id' => 3,
-                            'username' => 'Ane',
-                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                        ],
-                        'message' => 'Hola, me interesa tu libro.',
-                        'counteroffer_made' => false,
-                        'delivery_confirmed_by_me' => false,
-                        'delivery_confirmed_by_other' => false,
-                        'chat_read_only' => false,
-                        'unread_messages' => 1,
-                        'can_rate' => false,
-                        'expires_at' => '2026-11-15T10:00:00Z',
-                        'created_at' => '2026-11-15T10:00:00Z',
-                        'updated_at' => '2026-11-15T10:00:00Z',
-                    ],
-                ],
-                'ratings' => [
-                    [
-                        'id' => 1,
-                        'offer_id' => 1,
-                        'rater' => [
-                            'id' => 3,
-                            'username' => 'Ane',
-                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                        ],
-                        'score' => 1,
-                        'comment' => 'Todo perfecto, muy amable.',
-                        'is_published' => true,
-                        'created_at' => '2026-11-15T10:00:00Z',
-                    ],
-                ],
-                'reports_received' => [
-                    [
-                        'id' => 1,
-                        'reporter' => [
-                            'id' => 3,
-                            'username' => 'Ane',
-                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                        ],
-                        'reported_user' => [
-                            'id' => 3,
-                            'username' => 'Ane',
-                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                            'email' => 'ane@example.com',
-                            'status' => 'active',
-                            'role' => 'user',
-                            'created_at' => '2026-11-15T10:00:00Z',
-                            'books_count' => 3,
-                            'average_rating' => 1.5,
-                            'strikes' => 1,
-                        ],
-                        'reason' => 'harassment',
-                        'description' => 'Lectora de novela y ensayo.',
-                        'offer_id' => 1,
-                        'status' => 'open',
-                        'resolution' => [
-                            'admin' => [
-                                'id' => 3,
-                                'username' => 'Ane',
-                                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                            ],
-                            'reason' => 'Motivo de la decisión.',
-                            'strike_added' => false,
-                            'resolved_at' => '2026-11-15T10:00:00Z',
-                        ],
-                        'created_at' => '2026-11-15T10:00:00Z',
-                    ],
-                ],
-                'actions' => [
-                    [
-                        'action' => 'suspend_user',
-                        'admin' => [
-                            'id' => 3,
-                            'username' => 'Ane',
-                            'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                        ],
-                        'reason' => 'Motivo de la decisión.',
-                        'created_at' => '2026-11-15T10:00:00Z',
-                    ],
-                ],
-            ],
-        ]);
+        $user->load([
+            'profile',
+            'books' => fn ($q) => $q->with(['categories', 'photos', 'user.profile'])->latest(),
+            //'offers' => fn ($q) => $q->with([
+            //    'requestedBook.categories',
+            //    'requestedBook.photos',
+            //    'requestedBook.owner.profile',
+            //    'offeredBook.categories',
+            //    'offeredBook.photos',
+            //    'offeredBook.owner.profile',
+            //    'requester',
+            //    'owner',
+            //])->latest(),
+            'ratingsReceived' => fn ($q) => $q->with('rater')->latest(),
+            //'reportsReceived' => fn ($q) => $q->with([
+            //    'reporter',
+            //    'reportedUser.profile',
+            //    'resolution.admin',
+            //])->latest(),
+            'adminActions' => fn ($q) => $q->with('admin')->latest(),
+        ])->loadCount('books');
+
+        return new AdminUserDetailResource($user);
     }
 
     /**
@@ -329,57 +91,50 @@ class UserController extends Controller
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
     #[Response(status: 409, description: 'La operación incumple una regla de negocio.', type: 'array{message: string, code: string}')]
-    public function suspend(Request $request, int $user)
+    public function suspend(AccountService $accounts, Request $request, User $user): AdminUserResource
     {
-        $request->validate([
+        $validated = $request->validate([
             /** Motivo de la decisión (queda registrado). */
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
-        return response()->json([
-            'data' => [
-                'id' => 3,
-                'username' => 'Ane',
-                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                'email' => 'ane@example.com',
-                'status' => 'active',
-                'role' => 'user',
-                'created_at' => '2026-11-15T10:00:00Z',
-                'books_count' => 3,
-                'average_rating' => 1.5,
-                'strikes' => 1,
-            ],
-        ]);
+        $accounts->suspend($user, $request->user(), $validated['reason']);
+
+        return new AdminUserResource($user->fresh());
     }
 
     /**
      * Reactivar una cuenta
      *
-     * Un "reset de strikes", los libros vuelven a estar disponibles y el contador de strikes vuelve a cero
-     * (RN-26).
+     * RN-26. La cuenta vuelve a estar activa y el contador de strikes vuelve a cero; el historial de
+     * denuncias y acciones se conserva. Solo se puede reactivar una cuenta suspendida (si no, `409`
+     * con `INVALID_STATUS`). El usuario vuelve a entrar con Google: sus sesiones anteriores no se recuperan.
      */
     #[Response(status: 403, description: 'El usuario no tiene permiso para esta acción.', type: 'array{message: string}')]
     #[Response(status: 409, description: 'La operación incumple una regla de negocio.', type: 'array{message: string, code: string}')]
-    public function reactivate(Request $request, int $user)
+    public function reactivate(AccountService $accounts, Request $request, User $user): AdminUserResource
     {
-        $request->validate([
+        $validated = $request->validate([
             /** Motivo de la decisión (queda registrado). */
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
-        return response()->json([
-            'data' => [
-                'id' => 3,
-                'username' => 'Ane',
-                'photo_url' => 'https://example.com/storage/photo_url.jpg',
-                'email' => 'ane@example.com',
-                'status' => 'active',
-                'role' => 'user',
-                'created_at' => '2026-11-15T10:00:00Z',
-                'books_count' => 3,
-                'average_rating' => 1.5,
-                'strikes' => 1,
-            ],
-        ]);
+        // return response()->json([
+        //     'data' => [
+        //         'id' => 3,
+        //         'username' => 'Ane',
+        //         'photo_url' => 'https://example.com/storage/photo_url.jpg',
+        //         'email' => 'ane@example.com',
+        //         'status' => 'active',
+        //         'role' => 'user',
+        //         'created_at' => '2026-11-15T10:00:00Z',
+        //         'books_count' => 3,
+        //         'average_rating' => 1.5,
+        //         'strikes' => 1,
+        //     ],
+        // ]);
+        $accounts->reactivate($user, $request->user(), $validated['reason']);
+
+        return new AdminUserResource($user->fresh());
     }
 }
