@@ -1,0 +1,85 @@
+<header class="header">
+  <div class="header-contenedor">
+    <a routerLink="/" class="logo">
+      <img src="/logo-verde.png" alt="Logo de LibroLibre" class="logo-icono" />
+      <span>LibroLibre</span>
+    </a>
+
+    <div class="buscador">
+      <input type="search" aria-label="Buscar libros" />
+      <button type="button" aria-label="Buscar">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="20" y1="20" x2="16.35" y2="16.35"></line>
+        </svg>
+      </button>
+    </div>
+
+    @if (auth.isLoggedIn()) {
+      <div class="acciones-usuario">
+        <div class="perfil-wrapper">
+          <button
+            type="button"
+            class="btn-circulo avatar"
+            (click)="toggleMenu()"
+            [attr.aria-label]="auth.user()?.username || 'Perfil de usuario'"
+          >
+            @if ($any(auth.user())?.avatar || $any(auth.user())?.picture) {
+              <img
+                [src]="$any(auth.user())?.avatar || $any(auth.user())?.picture"
+                [alt]="auth.user()?.username"
+              />
+            } @else {
+              <span>{{ auth.user()?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+            }
+          </button>
+
+          @if (menuAbierto()) {
+            <div class="perfil-dropdown">
+              <p class="dropdown-nombre">{{ auth.user()?.username }}</p>
+              <a routerLink="/perfil" (click)="menuAbierto.set(false)">Mi perfil</a>
+              <button type="button" (click)="logout()">Cerrar sesión</button>
+            </div>
+          }
+        </div>
+
+        <button type="button" class="btn-circulo btn-notificaciones" aria-label="Notificaciones">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.9"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+        </button>
+
+        <a routerLink="/subir-libro" class="btn-circulo btn-crear" aria-label="Subir libro">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.9"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </a>
+      </div>
+    } @else {
+      <a routerLink="/login" class="boton-acceso">Registro | Inicio sesión</a>
+    }
+  </div>
+</header>
