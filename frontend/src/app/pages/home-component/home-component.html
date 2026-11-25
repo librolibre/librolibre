@@ -1,11 +1,36 @@
-@if (loginError) {
-  <p>{{ loginError }}</p>
-}
+<app-header />
+<main class="contenedor">
+  <section class="banner">
+    <div class="banner-contenido">
+      <h1>LibroLibre</h1>
+      <div class="banner-sub">
+        <p>Lee más, gasta menos.</p>
+        <button type="button">Ver libros</button>
+      </div>
+    </div>
+  </section>
 
-@if (auth.isLoggedIn()) {
-  <p>Has iniciado sesión.</p>
-  <button type="button" (click)="logout()">Cerrar sesión</button>
-} @else {
-  <!-- A normal link, not HttpClient: the whole browser goes to Laravel and then to Google -->
-  <a [href]="auth.googleLoginUrl">Entrar con Google</a>
-}
+  <section class="destacados">
+    <h2>Nuestra mejor elección</h2>
+    <div class="tarjetas">
+      @for (libro of libros; track libro.titulo) {
+        <app-libro-card [libro]="libro" />
+      }
+    </div>
+
+    <div class="ver-mas-contenedor">
+      <button type="button" class="btn-ver-mas">Ver más</button>
+    </div>
+  </section>
+
+  <section class="generos">
+    <h2>Filtra por género</h2>
+    <div class="generos-grid">
+      <button type="button" class="genero-card verde grande">Narrativa</button>
+      <button type="button" class="genero-card naranja peque">Terror</button>
+      <button type="button" class="genero-card naranja peque">Lírica</button>
+      <button type="button" class="genero-card verde grande">Dramática</button>
+    </div>
+  </section>
+</main>
+<app-footer />

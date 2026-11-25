@@ -1,0 +1,120 @@
+.login-page {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--verde);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+/* --- LOGO SUPERIOR IZQUIERDA --- */
+.login-header {
+  position: absolute;
+  top: 28px;
+  left: 32px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: var(--font-serif);
+  font-size: 2rem;
+  color: var(--gris);
+  line-height: 1;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  text-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.logo:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.logo-icono {
+  height: 50px;
+  width: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 390px;
+  padding: 40px 36px 46px;
+  border-radius: 36px;
+  background: linear-gradient(180deg, rgba(217, 217, 217, 0.72) 0%, rgba(217, 217, 217, 0.25) 100%);
+  border: 1px solid rgba(217, 217, 217, 0.45);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.login-card h1 {
+  margin: 0 0 28px;
+  font-family: var(--font-sans);
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: var(--oscuro);
+  text-shadow: 0 8px 20px rgba(0, 0, 0, 0.22);
+}
+
+.btn-google {
+  width: 100%;
+  max-width: 310px;
+  height: 54px;
+  background-color: var(--gris);
+  color: var(--oscuro);
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  font-family: var(--font-sans);
+  font-size: 0.98rem;
+  font-weight: 500;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.22);
+  transition:
+    transform 0.15s ease,
+    filter 0.15s ease;
+  box-sizing: border-box;
+}
+
+.btn-google:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+}
+
+.google-icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+/* --- RESPONSIVE MÓVIL --- */
+@media (max-width: 480px) {
+  .login-header {
+    top: 20px;
+    left: 20px;
+  }
+
+  .login-card {
+    padding: 32px 24px 38px;
+    border-radius: 28px;
+  }
+
+  .login-card h1 {
+    font-size: 1.5rem;
+  }
+}

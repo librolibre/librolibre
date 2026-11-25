@@ -1,0 +1,11 @@
+<article class="tarjeta">
+  <div class="portada">
+    @if (libro().portada) {
+      <img [src]="libro().portada" [alt]="libro().titulo" />
+    }
+  </div>
+  <div class="info">
+    <p class="titulo">{{ libro().titulo }}</p>
+    <small>{{ libro().genero }}</small>
+  </div>
+</article>

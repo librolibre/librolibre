@@ -1,27 +1,18 @@
-import { Component, inject } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../core/auth.service';
-
-const LOGIN_ERRORS: Record<string, string> = {
-  cancelled: 'Has cancelado el acceso con Google.',
-  suspended: 'Tu cuenta está suspendida.',
-};
+import { Component } from '@angular/core';
+import { HeaderComponent } from '../../components/header/header';
+import { LibroCard } from '../../components/libro-card/libro-card';
+import { Footer } from '../../components/footer/footer';
 
 @Component({
-  imports: [],
+  imports: [HeaderComponent, LibroCard, Footer],
   selector: 'app-home-component',
   styleUrl: './home-component.css',
   templateUrl: './home-component.html',
 })
 export class HomeComponent {
-  protected readonly auth = inject(AuthService);
-
-  private readonly errorCode = inject(ActivatedRoute).snapshot.queryParamMap.get('error');
-  protected readonly loginError = this.errorCode
-    ? (LOGIN_ERRORS[this.errorCode] ?? 'No se ha podido entrar.')
-    : null;
-
-  logout(): void {
-    this.auth.logout().subscribe();
-  }
+  protected readonly libros = [
+    { titulo: 'Nombre del libro', genero: 'Género' },
+    { titulo: 'Nombre del libro 2', genero: 'Género' },
+    { titulo: 'Nombre del libro 3', genero: 'Género' },
+  ];
 }

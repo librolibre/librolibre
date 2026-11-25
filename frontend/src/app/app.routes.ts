@@ -6,22 +6,8 @@ import { LoginComponent } from './pages/login-component/login-component';
 import { Privacy } from './pages/privacy/privacy';
 
 export const routes: Routes = [
-  {
-    path: '',
-    component: HomeComponent,
-  },
-  {
-    path: 'auth/callback',
-    component: LoginComponent,
-  },
-  {
-    path: 'privacidad',
-    component: Privacy,
-    canActivate: [authGuard],
-  },
-  {
-    // Laravel redirects here after Google: /auth/callback?code=…
-    path: 'auth/callback',
-    component: AuthCallback,
-  },
+  { path: '', component: HomeComponent },
+  { path: 'login', component: LoginComponent },
+  { path: 'privacidad', component: Privacy, canActivate: [authGuard] },
+  { path: 'auth/callback', component: AuthCallback },
 ];
