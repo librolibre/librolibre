@@ -91,6 +91,13 @@ class User extends Authenticatable
         return $this->hasMany(AdminAction::class, 'admin_id');
     }
 
+    // Acciones de administración sobre esta cuenta - Laurence
+    public function actionsReceived(): HasMany
+    {
+        return $this->hasMany(AdminAction::class, 'target_id')
+            ->where('target_type', 'user');
+    }
+
     // Completed exchanges, as requester or as owner of the requested book
     public function completedExchangesCount(): int
     {
