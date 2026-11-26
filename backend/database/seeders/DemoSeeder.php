@@ -10,7 +10,9 @@ use App\Models\Language;
 use App\Models\Profile;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Http\File;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * Demo data (#14): ~20 users and ~40 real books, so the front end and the demo have something to show.
@@ -29,6 +31,8 @@ class DemoSeeder extends Seeder
     public const EMAIL_DOMAIN = 'demo.librolibre.test';
 
     public const GOOGLE_ID_PREFIX = 'demo-';
+
+    public const PHOTOS_FOLDER = 'profile-photos/demo';
 
     public function run(): void
     {
@@ -80,6 +84,7 @@ class DemoSeeder extends Seeder
             $user->profile_id = $profileIds[$data['role'] ?? 'user'];
             $user->status = $data['status'] ?? 'active';
             $user->strikes = $data['strikes'] ?? 0;
+            $user->photo_path = $this->storePhoto($data['slug']);
             $user->save();
 
             $user->languages()->sync($languageIds->only($data['languages'])->values());
@@ -88,6 +93,19 @@ class DemoSeeder extends Seeder
         }
 
         return $demoUsers;
+    }
+
+    // Copia el avatar al disco de fotos; nombre fijo para no duplicarlo - Laurence
+    private function storePhoto(string $slug): ?string
+    {
+        $source = database_path("seeders/demo/photos/{$slug}.png");
+
+        if (! is_file($source)) {
+            return null;
+        }
+
+        return Storage::disk(config('filesystems.photos_disk'))
+            ->putFileAs(self::PHOTOS_FOLDER, new File($source), "{$slug}.png");
     }
 
     /**
