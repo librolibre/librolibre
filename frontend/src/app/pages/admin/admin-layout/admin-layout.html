@@ -1,0 +1,40 @@
+<div class="admin">
+    <aside class="sidebar">
+        <a routerLink="/admin" class="marca">
+            <img src="/logo-verde.png" alt="" class="marca-logo"/>
+            <span class="marca-nombre">LibroLibre</span>
+            <span class="marca-badge">ADMIN</span>
+        </a>
+    
+    <nav class="menu">
+        <a routerLink="usuarios" routerLinkActive="activo" class="menu-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
+            Usuarios
+        </a>
+        <a routerLink="libros" routerLinkActive="activo" class="menu-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+            </svg>
+            Libros
+        </a>
+        <a routerLink="denuncias" routerLinkActive="activo" class="menu-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                <line x1="4" y1="22" x2="4" y2="15"></line>
+            </svg>
+            Denuncias
+        </a>
+    </nav>
+    <a routerLink="/" class="volver">← Volver a la aplicación</a>
+    </aside>
+
+    <main class="contenid">
+        <router-outlet/>
+    </main>
+</div>
