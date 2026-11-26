@@ -39,3 +39,42 @@ export interface Category {
   code: string;
   name: string;
 }
+
+export interface Paginated<T> {
+  data: T[];
+  links: {
+    first: string | null;
+    last: string | null;
+    prev: string | null;
+    next: string | null;
+  };
+  meta: {
+    current_page: number;
+    from: number | null;
+    last_page: number;
+    per_page: number;
+    to: number | null;
+    total: number;
+  };
+}
+
+export type AccountStatus = 'active' | 'suspended' | 'deleted';
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  photo_url: string | null;
+  email: string;
+  status: AccountStatus;
+  role: 'user' | 'admin';
+  created_at: string;
+  books_count: number;
+  average_rating: number | null;
+  strikes: number;
+}
+
+export interface AdminUserFilter {
+  page?: number;
+  q?: string;
+  status?: AccountStatus | '';
+}

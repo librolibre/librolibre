@@ -2,3 +2,100 @@
     titulo="Usuarios"
     subtitulo="Busca cuentas, revisa su actividad y suspende o reactiva"
 />
+
+<div class="pagina">
+  <section class="listado">
+    <div class="filtros">
+      <label class="buscador">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7"></circle>
+          <line x1="20" y1="20" x2="16.35" y2="16.35"></line>
+        </svg>
+        <input
+          #buscador
+          type="search"
+          placeholder="Buscar por nombre o email"
+          (input)="buscar(buscador.value)"
+        />
+      </label>
+
+      <label class="estado">
+        Estado
+        <select #filtro (change)="filtrarEstado(filtro.value)">
+          <option value="">Todos</option>
+          <option value="active">Activo</option>
+          <option value="suspended">Suspendido</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="tabla-contenedor">
+      <table class="tabla">
+        <thead>
+          <tr>
+            <th>Usuario</th>
+            <th>Email</th>
+            <th>Alta</th>
+            <th>Estado</th>
+            <th>Libros</th>
+            <th>Valoración</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (usuario of usuarios(); track usuario.id) {
+            <tr
+              (click)="seleccionar(usuario)"
+              [class.seleccionada]="seleccionado()?.id === usuario.id"
+            >
+              <td>
+                <div class="usuario">
+                  @if (usuario.photo_url) {
+                    <img class="avatar" [src]="usuario.photo_url" alt="" />
+                  } @else {
+                    <span class="avatar">{{ iniciales(usuario.username) }}</span>
+                  }
+                  <span class="nombre">{{ usuario.username }}</span>
+                </div>
+              </td>
+              <td class="email">{{ usuario.email }}</td>
+              <td>{{ usuario.created_at | date: 'dd/MM/yyyy' }}</td>
+              <td>
+                @if (usuario.status === 'active') {
+                  <span class="badge activo">✓ Activo</span>
+                } @else {
+                  <span class="badge suspendido">⊘ Suspendido</span>
+                }
+              </td>
+              <td>{{ usuario.books_count }}</td>
+              <td>★ {{ valoracion(usuario.average_rating) }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="vacio">
+                {{ cargando() ? 'Cargando…' : 'No hay usuarios con esos filtros.' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    @if (error()) {
+      <p class="error">{{ error() }}</p>
+    }
+
+    @if (meta(); as m) {
+      @if (m.last_page > 1) {
+        <nav class="paginacion">
+          <button type="button" [disabled]="m.current_page === 1" (click)="irAPagina(m.current_page - 1)">
+            ← Anterior
+          </button>
+          <span>Página {{ m.current_page }} de {{ m.last_page }}</span>
+          <button type="button" [disabled]="m.current_page === m.last_page" (click)="irAPagina(m.current_page + 1)">
+            Siguiente →
+          </button>
+        </nav>
+      }
+    }
+  </section>
+</div>
