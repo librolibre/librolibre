@@ -1175,7 +1175,8 @@ components:
         publisher: { type: [string, 'null'] }
         publication_year: { type: [integer, 'null'], example: 1967 }
         page_count: { type: [integer, 'null'] }
-        cover_image_url: { type: [string, 'null'], format: uri }
+        # cover_image_url: { type: [string, 'null'], format: uri }
+        cover_url: { type: [string, 'null'], format: uri }
 
     # ---------------------------------------------------------------- books
     BookInput:
@@ -1191,8 +1192,10 @@ components:
         edition_name: { type: [string, 'null'], maxLength: 255 }
         page_count: { type: [integer, 'null'], minimum: 1 }
         dimensions: { type: [string, 'null'], maxLength: 50, example: 21 x 14 cm }
-        weight: { type: [integer, 'null'], description: En gramos. }
-        cover_image_url: { type: [string, 'null'], format: uri }
+        # weight: { type: [integer, 'null'], description: En gramos. }
+        weight: { type: [number, 'null'], description: En gramos (hasta 2 decimales). }
+        # cover_image_url: { type: [string, 'null'], format: uri }
+        cover_url: { type: [string, 'null'], format: uri }
         categories:
           type: array
           minItems: 1
@@ -1223,8 +1226,10 @@ components:
         edition_name: { type: [string, 'null'] }
         page_count: { type: [integer, 'null'] }
         dimensions: { type: [string, 'null'] }
-        weight: { type: [integer, 'null'] }
-        cover_image_url: { type: [string, 'null'], format: uri }
+        # weight: { type: [integer, 'null'] }
+        weight: { type: [number, 'null'], description: En gramos (hasta 2 decimales). }
+        # cover_image_url: { type: [string, 'null'], format: uri }
+        cover_url: { type: [string, 'null'], format: uri }
         categories: { type: array, items: { $ref: '#/components/schemas/Category' } }
         language: { type: string }
         binding_type: { $ref: '#/components/schemas/BindingType' }
@@ -1252,7 +1257,8 @@ components:
       properties:
         book_id: { type: integer }
         title: { type: string }
-        cover_image_url: { type: [string, 'null'], format: uri }
+        # cover_image_url: { type: [string, 'null'], format: uri }
+        cover_url: { type: [string, 'null'], format: uri }
         location: { $ref: '#/components/schemas/ApproximateLocation' }
 
     # ---------------------------------------------------------------- offers, chat and ratings

@@ -61,7 +61,9 @@ class UserController extends Controller
     {
         $user->load([
             'profile',
-            'books' => fn ($q) => $q->with(['categories', 'photos', 'user.profile'])->latest(),
+            //'books' => fn ($q) => $q->with(['categories', 'photos', 'user.profile'])->latest(),
+            // BookResource: aún no listos categorías, fotos, propietarios - Laurence
+            'books' => fn ($q) => $q->latest(),
             //'offers' => fn ($q) => $q->with([
             //    'requestedBook.categories',
             //    'requestedBook.photos',
@@ -78,7 +80,9 @@ class UserController extends Controller
             //    'reportedUser.profile',
             //    'resolution.admin',
             //])->latest(),
-            'adminActions' => fn ($q) => $q->with('admin')->latest(),
+            //'adminActions' => fn ($q) => $q->with('admin')->latest(),
+            // Las acciones sobre la cuenta, no las que hizo como admin - Laurence
+            'actionsReceived' => fn ($q) => $q->with('admin')->latest(),
         ])->loadCount('books');
 
         return new AdminUserDetailResource($user);

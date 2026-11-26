@@ -64,6 +64,10 @@ class AdminUserDetailResource extends JsonResource
             //    fn ($book) => $this->transformBook($book, $photosDisk, $request)
             //)->values()),
 
+            // Los libros con BookResource; transformBook() no existe - Laurence
+            /** Libros del usuario, en cualquier estado, del más reciente al más antiguo. */
+            'books' => BookResource::collection($this->whenLoaded('books')),
+
             /** Ofertas en las que participa el usuario. */
             /*
             'offers' => $this->whenLoaded('offers', fn () => $this->offers->map(fn ($offer) => [
@@ -112,6 +116,19 @@ class AdminUserDetailResource extends JsonResource
                 'comment' => $rating->comment,
                 'is_published' => (bool) ($rating->is_published ?? true),
                 'created_at' => $rating->created_at,
+            ])->values()),
+
+            // Faltaban las acciones del contrato (actions) - Laurence
+            /** Acciones de administración sobre la cuenta, de la más reciente a la más antigua. */
+            'actions' => $this->whenLoaded('actionsReceived', fn () => $this->actionsReceived->map(fn ($action) => [
+                'action' => $action->action,
+                'admin' => $action->admin ? [
+                    'id' => $action->admin->id,
+                    'username' => $action->admin->username,
+                    'photo_url' => $photoUrl($action->admin->photo_path),
+                ] : null,
+                'reason' => $action->reason,
+                'created_at' => $action->created_at,
             ])->values()),
 
             /** Denuncias recibidas por el usuario. */
