@@ -1,11 +1,12 @@
 import { DatePipe } from '@angular/common';
+import {AdminAvatar} from '../admin-avatar/admin-avatar';
 import { Component, inject, signal } from '@angular/core';
 import { AdminService } from '../../../core/admin.service';
 import { AccountStatus, AdminUser, AdminUserDetail, Paginated} from '../../../core/models';
 import {AdminHeader} from '../admin-header/admin-header';
 
 @Component({
-  imports: [AdminHeader, DatePipe],
+  imports: [AdminAvatar, AdminHeader, DatePipe],
   selector: 'app-admin-usuarios',
   styleUrl: './admin-usuarios.css',
   templateUrl: './admin-usuarios.html',
@@ -106,17 +107,6 @@ export class AdminUsuarios {
   protected cerrarDetalle(): void {
     this.seleccionado.set(null);
     this.detalle.set(null);
-  }
-
-  protected iniciales(nombre: string): string {
-    return (
-      nombre
-        .split(' ')
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((parte) => parte[0].toUpperCase())
-        .join('') || '?'
-    );
   }
 
   protected valoracion(media: number | null): string {

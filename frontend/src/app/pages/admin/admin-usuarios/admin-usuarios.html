@@ -49,11 +49,7 @@
             >
               <td>
                 <div class="usuario">
-                  @if (imagenVisible(usuario.photo_url)) {
-+                    <img class="avatar" [src]="usuario.photo_url" alt="" (error)="marcarImagenRota(usuario.photo_url)" />
-                  } @else {
-                    <span class="avatar">{{ iniciales(usuario.username) }}</span>
-                  }
+                  <app-admin-avatar class="avatar" [nombre]="usuario.username" [foto]="usuario.photo_url" />
                   <span class="nombre">{{ usuario.username }}</span>
                 </div>
               </td>
@@ -106,11 +102,7 @@
       </header>
 
       <div class="detalle-usuario">
-        @if (imagenVisible(usuario.photo_url)) {
-          <img class="detalle-avatar" [src]="usuario.photo_url" alt="" (error)="marcarImagenRota(usuario.photo_url)" />
-        } @else {
-          <span class="detalle-avatar">{{ iniciales(usuario.username) }}</span>
-        }
+        <app-admin-avatar class="detalle-avatar" [nombre]="usuario.username" [foto]="usuario.photo_url" />
         <div>
           <p class="detalle-nombre">{{ usuario.username }}</p>
           <p class="detalle-dato">{{ usuario.email }}</p>
