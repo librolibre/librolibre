@@ -39,3 +39,87 @@ export interface Category {
   code: string;
   name: string;
 }
+
+export interface Paginated<T> {
+  data: T[];
+  links: {
+    first: string | null;
+    last: string | null;
+    prev: string | null;
+    next: string | null;
+  };
+  meta: {
+    current_page: number;
+    from: number | null;
+    last_page: number;
+    per_page: number;
+    to: number | null;
+    total: number;
+  };
+}
+
+export type AccountStatus = 'active' | 'suspended' | 'deleted';
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  photo_url: string | null;
+  email: string;
+  status: AccountStatus;
+  role: 'user' | 'admin';
+  created_at: string;
+  books_count: number;
+  average_rating: number | null;
+  strikes: number;
+}
+
+export interface UpdatePerfilDto {
+  username?: string;
+  description?: string | null;
+  postal_code?: string | null;
+  location?: { latitude: number; longitude: number } | null;
+}
+
+export interface AdminUserFilter {
+  page?: number;
+  q?: string;
+  status?: AccountStatus | '';
+}
+
+export interface UserSummary {
+  id: number;
+  username: string;
+  photo_url: string | null;
+}
+
+export interface AdminUserBook {
+  id: number;
+  title: string;
+  author: string;
+  cover_url: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface AdminRating {
+  id: number;
+  offer_id: number;
+  rater: UserSummary;
+  score: number;
+  comment: string | null;
+  is_published: boolean;
+  created_at: string;
+}
+
+export interface AdminAction {
+  action: string;
+  admin: UserSummary;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  books: AdminUserBook[];
+  ratings: AdminRating[];
+  actions: AdminAction[];
+}

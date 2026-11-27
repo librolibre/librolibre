@@ -31,12 +31,16 @@
             (click)="toggleMenu()"
             [attr.aria-label]="auth.user()?.username || 'Perfil de usuario'"
           >
-            <!-- @if ($any(auth.user())?.avatar || $any(auth.user())?.picture) { -->
-            <!--   <img -->
-            <!--     [src]="$any(auth.user())?.avatar || $any(auth.user())?.picture" -->
-            <!--     [alt]="auth.user()?.username" -->
-            <!--   /> -->
-            <!-- La API envía la foto en photo_url - Laurence -->
+            @if (auth.user()?.photo_url && !fotoRota()) {
+              <img
+                [src]="auth.user()?.photo_url"
+                [alt]="auth.user()?.username"
+                referrerpolicy="no-referrer"
+                (error)="fotoRota.set(true)"
+              />
+            } @else {
+              <span>{{ auth.user()?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+            }
             @if (auth.user()?.photo_url) {
               <img [src]="auth.user()?.photo_url" [alt]="auth.user()?.username" />
             } @else {
@@ -48,6 +52,9 @@
             <div class="perfil-dropdown">
               <p class="dropdown-nombre">{{ auth.user()?.username }}</p>
               <a routerLink="/perfil" (click)="menuAbierto.set(false)">Mi perfil</a>
+              @if (auth.user()?.role === 'admin') {
+                <a routerLink="/admin" (click)="menuAbierto.set(false)">Panel de administración</a>
+              }
               <button type="button" (click)="logout()">Cerrar sesión</button>
             </div>
           }

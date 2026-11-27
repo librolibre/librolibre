@@ -1,0 +1,17 @@
+<header class="admin-header">
+    <div>
+        <h1>{{ titulo() }}</h1>
+        @if (subtitulo()) {
+            <p>{{ subtitulo() }}</p>
+        }
+    </div>
+
+    <div class="admin-usuario">
+        <span>Admin: {{auth.user()?.username}}</span>
+        @if (auth.user()?.photo_url) {
+            <img class="avatar" [src]="auth.user()?.photo_url" alt=""/>
+        } @else {
+            <span class="avatar">{{ iniciales() }}</span>
+        }
+    </div>
+</header>

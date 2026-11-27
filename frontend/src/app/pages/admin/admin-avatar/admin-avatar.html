@@ -1,0 +1,5 @@
+@if (mostrarFoto()) {
+  <img [src]="foto()" alt="" (error)="fotoRota.set(foto())" />
+} @else {
+  {{ iniciales() }}
+}

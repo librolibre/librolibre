@@ -1,0 +1,89 @@
+@let u = usuario();
+
+<header class="detalle-cabecera">
+  <span>DETALLE</span>
+  <button type="button" class="cerrar" aria-label="Cerrar detalle" (click)="cerrar.emit()">×</button>
+</header>
+
+<div class="detalle-usuario">
+  <app-admin-avatar class="detalle-avatar" [nombre]="u.username" [foto]="u.photo_url" />
+  <div>
+    <p class="detalle-nombre">{{ u.username }}</p>
+    <p class="detalle-dato">{{ u.email }}</p>
+    <p class="detalle-dato">Alta: {{ u.created_at | date: 'dd/MM/yyyy' }}</p>
+    <div class="etiquetas">
+      @if (u.status === 'active') {
+        <span class="badge activo">✓ Activo</span>
+      } @else {
+        <span class="badge suspendido">⊘ Suspendido</span>
+      }
+      @if (u.role === 'admin') {
+        <span class="badge rol">Admin</span>
+      }
+    </div>
+  </div>
+</div>
+
+<div class="estadisticas">
+  <div class="estadistica">
+    <strong>{{ u.books_count }}</strong>
+    <span>Libros</span>
+  </div>
+  <div class="estadistica">
+    <strong>—</strong>
+    <span>Intercambios</span>
+  </div>
+  <div class="estadistica">
+    <strong>{{ valoracion(u.average_rating) }}</strong>
+    <span>Valoración</span>
+  </div>
+</div>
+
+@if (cargando()) {
+  <p class="bloque-vacio">Cargando actividad…</p>
+} @else if (error()) {
+  <p class="bloque-vacio">No se ha podido cargar la actividad.</p>
+} @else if (detalle(); as d) {
+  <section class="bloque">
+    <h3>Libros publicados</h3>
+    @for (libro of d.books.slice(0, 4); track libro.id) {
+      <div class="libro">
+        @if (portadaVisible(libro.cover_url)) {
+          <img class="libro-portada" [src]="libro.cover_url" alt="" (error)="marcarPortadaRota(libro.cover_url)" />
+        } @else {
+          <span class="libro-portada"></span>
+        }
+        <div class="libro-info">
+          <p class="libro-titulo">{{ libro.title }}</p>
+          <p class="libro-autor">{{ libro.author }}</p>
+        </div>
+        <span class="libro-estado">{{ estadoLibro(libro.status) }}</span>
+      </div>
+    } @empty {
+      <p class="bloque-vacio">No ha publicado libros todavía.</p>
+    }
+  </section>
+
+  <section class="bloque">
+    <h3>Valoraciones recientes</h3>
+    @for (opinion of d.ratings.slice(0, 3); track opinion.id) {
+      <div class="opinion">
+        <div class="opinion-cabecera">
+          <span class="estrellas">{{ estrellas(opinion.score) }}</span>
+          <span>{{ opinion.rater.username }}</span>
+        </div>
+        @if (opinion.comment) {
+          <p class="opinion-comentario">{{ opinion.comment }}</p>
+        }
+      </div>
+    } @empty {
+      <p class="bloque-vacio">Sin valoraciones todavía.</p>
+    }
+  </section>
+}
+
+  @if (u.role === 'admin') {
+    <p class="bloque-vacio">Las cuentas de administrador no se pueden suspender.</p>
+  } @else if (u.status === 'active') {
+    <button type="button" class="boton-accion reactivar" (click)="accion.emit('suspender')">Suspender cuenta</button>
+  }
