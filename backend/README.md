@@ -97,6 +97,38 @@ php artisan demo:clear                          # borrarlos todos (pide confirma
   `carlos`, `pablo`, `leire`, `gorka`, `irati`, `xabier`, `itziar`; `lucia` y `sergio` (suspendidos). El email es
   `<nombre>@demo.librolibre.test`.
 
+## Fotos: disco local y bucket
+
+Las fotos (perfil y libros) se guardan en el disco que diga `PHOTOS_DISK`. El código no cambia; solo el `.env`.
+
+| Entorno | `PHOTOS_DISK` | Dónde quedan las fotos |
+|---|---|---|
+| Tu equipo | `public` | `storage/app/public` (hace falta `php artisan storage:link` una vez) |
+| Desplegado (`dev` y `production`) | `s3` | Bucket `librolibre-photos` de Neon Object Storage, uno por rama de Neon |
+
+- **En local no hace falta ninguna clave:** deja `PHOTOS_DISK=public`, como en `.env.example`.
+- Los buckets van con las ramas de Neon: la rama `dev` tiene su bucket y `production` el suyo. Cada uno tiene su
+  propia clave (`librolibre-dev` y `librolibre-api`, en *Settings → Credentials* de Neon). **Las claves no se comparten
+  ni se suben al repositorio:** solo van en la configuración del entorno desplegado.
+- Variables del entorno desplegado (los valores salen de la consola de Neon; ojo, Neon las llama
+  `AWS_ENDPOINT_URL_S3` y `AWS_REGION`, y Laravel lee `AWS_ENDPOINT` y `AWS_DEFAULT_REGION`):
+
+  ```env
+  PHOTOS_DISK=s3
+  AWS_ACCESS_KEY_ID=nak_live_...
+  AWS_SECRET_ACCESS_KEY=nsk_live_...
+  AWS_DEFAULT_REGION=eu-central-1
+  AWS_BUCKET=librolibre-photos
+  AWS_ENDPOINT=https://<id-de-la-rama>.storage.c-7.eu-central-1.aws.neon.tech
+  AWS_URL=https://<id-de-la-rama>.storage.c-7.eu-central-1.aws.neon.tech/librolibre-photos
+  AWS_USE_PATH_STYLE_ENDPOINT=true
+  ```
+
+- El bucket es `public_read`: cualquiera puede ver una foto con su URL, pero solo la API puede subir y borrar.
+  No se usa `visibility: public` en el código (Neon responde `501`).
+- Las claves caducan el **25 de mayo de 2027**: hay que rotarlas antes en la consola de Neon.
+- Los tests no usan el bucket (simulan el disco con `Storage::fake`), así que CI no necesita claves.
+
 ## Administradores (#32)
 
 El rol **no se puede cambiar desde la API**: solo con este comando, en el servidor (o con tu `.env` apuntando a

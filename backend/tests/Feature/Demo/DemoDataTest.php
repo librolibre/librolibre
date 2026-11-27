@@ -9,6 +9,7 @@ use Database\Seeders\DemoSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -19,6 +20,14 @@ use Tests\TestCase;
 class DemoDataTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** The seeder copies avatars to the photos disk: a fake disk, so the tests never write real files. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake(config('filesystems.photos_disk'));
+    }
 
     /** @return array<int, array<string, mixed>> */
     private function demoUsers(): array
@@ -105,6 +114,56 @@ class DemoDataTest extends TestCase
         $this->assertSame($before, $real->fresh()->only($fields));
     }
 
+    /** Users with a PNG in demo/photos get it as their photo; the ones without (Jon, Pablo, Lucía) keep null. */
+    public function test_seeder_stores_the_demo_photos(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $disk = Storage::disk(config('filesystems.photos_disk'));
+
+        $ane = $this->demoUserQuery()->where('username', 'Ane')->first();
+        $this->assertSame(DemoSeeder::PHOTOS_FOLDER.'/ane.png', $ane->photo_path);
+        $disk->assertExists($ane->photo_path);
+
+        $this->assertNull($this->demoUserQuery()->where('username', 'Jon')->value('photo_path'));
+
+        // One photo per PNG, at a fixed path: running it again does not add files
+        $this->seed(DemoSeeder::class);
+        $pngs = glob(database_path('seeders/demo/photos/*.png'));
+        $this->assertCount(count($pngs), $disk->files(DemoSeeder::PHOTOS_FOLDER));
+    }
+
+    /**
+     * Deleting a demo account removes its photo file, but not the PNG in the repo:
+     * seeding again creates a new user with the photo back, and the old (anonymised) row points to nothing.
+     */
+    public function test_reseeding_after_deleting_a_demo_user_restores_the_photo(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $disk = Storage::disk(config('filesystems.photos_disk'));
+        $email = 'ane@'.DemoSeeder::EMAIL_DOMAIN;
+        $path = DemoSeeder::PHOTOS_FOLDER.'/ane.png';
+        $old = User::where('email', $email)->first();
+
+        $this->withToken($old->createToken('test')->plainTextToken)
+            ->deleteJson('/api/me')
+            ->assertNoContent();
+
+        // The account is anonymised and its photo file is gone
+        $this->assertNull($old->fresh()->photo_path);
+        $disk->assertMissing($path);
+
+        $this->seed(DemoSeeder::class);
+
+        // A new Ane, with the photo copied again from the repo
+        $new = User::where('email', $email)->first();
+        $this->assertNotSame($old->id, $new->id);
+        $this->assertSame($path, $new->photo_path);
+        $disk->assertExists($path);
+
+        // The old row does not share the new file
+        $this->assertNull($old->fresh()->photo_path);
+    }
+
     // ------------------------------------------------------------------
     // demo:token
     // ------------------------------------------------------------------
@@ -161,6 +220,20 @@ class DemoDataTest extends TestCase
         // The real user and their book are still there
         $this->assertModelExists($real);
         $this->assertModelExists($realBook);
+    }
+
+    /** demo:clear also deletes the demo users' photo files from the photos disk. */
+    public function test_demo_clear_deletes_the_demo_photos(): void
+    {
+        $this->seed(DemoSeeder::class);
+        $paths = $this->demoUserQuery()->whereNotNull('photo_path')->pluck('photo_path');
+        $this->assertNotEmpty($paths);
+
+        $this->artisan('demo:clear', ['--force' => true])->assertSuccessful();
+
+        foreach ($paths as $path) {
+            Storage::disk(config('filesystems.photos_disk'))->assertMissing($path);
+        }
     }
 
     /** Without --force it asks first; answering no deletes nothing. */

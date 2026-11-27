@@ -11,6 +11,7 @@ use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * php artisan demo:clear — removes all the demo data (#14): the users @demo.librolibre.test and everything
@@ -41,6 +42,7 @@ class DemoClear extends Command
         }
 
         $bookIds = Book::whereIn('user_id', $userIds)->pluck('id');
+        $photoPaths = User::whereIn('id', $userIds)->whereNotNull('photo_path')->pluck('photo_path');
 
         // All or nothing; the order respects the foreign keys (children first)
         DB::transaction(function () use ($userIds, $bookIds) {
@@ -62,6 +64,9 @@ class DemoClear extends Command
             // Users (their languages and blocks go with them: cascade)
             User::whereIn('id', $userIds)->delete();
         });
+
+        // Las fotos, después de la transacción - Laurence
+        Storage::disk(config('filesystems.photos_disk'))->delete($photoPaths->all());
 
         $this->info("Borrados {$userIds->count()} usuarios de prueba y {$bookIds->count()} libros.");
 
