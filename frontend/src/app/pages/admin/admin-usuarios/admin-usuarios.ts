@@ -2,11 +2,13 @@ import { DatePipe } from '@angular/common';
 import {AdminAvatar} from '../admin-avatar/admin-avatar';
 import { Component, inject, signal } from '@angular/core';
 import { AdminService } from '../../../core/admin.service';
-import { AccountStatus, AdminUser, AdminUserDetail, Paginated} from '../../../core/models';
+import { AccountStatus, AdminUser, Paginated} from '../../../core/models';
 import {AdminHeader} from '../admin-header/admin-header';
+import {formatearValoracion} from '../admin-formato';
+import { UsuarioDetalle } from '../usuario-detalle/usuario-detalle';
 
 @Component({
-  imports: [AdminAvatar, AdminHeader, DatePipe],
+  imports: [AdminAvatar, AdminHeader, UsuarioDetalle, DatePipe],
   selector: 'app-admin-usuarios',
   styleUrl: './admin-usuarios.css',
   templateUrl: './admin-usuarios.html',
@@ -26,11 +28,7 @@ export class AdminUsuarios {
 
   protected readonly accion = signal<'suspender' | 'reactivar' | null>(null);
 
-  protected readonly detalle = signal<AdminUserDetail | null>(null);
-  protected readonly cargandoDetalle = signal(false);
-  protected readonly errorDetalle = signal(false);
-
-  private readonly imagenesRotas = signal(new Set<string>());
+  protected readonly valoracion = formatearValoracion;
 
   private temporizadorBusqueda?: ReturnType<typeof setTimeout>;
 
@@ -85,56 +83,9 @@ export class AdminUsuarios {
 
   protected seleccionar(usuario: AdminUser): void {
     this.seleccionado.set(usuario);
-    this.detalle.set(null);
-    this.cargandoDetalle.set(true);
-    this.errorDetalle.set(false);
-
-    this.admin.getUser(usuario.id).subscribe({
-      next: (detalle) => {
-        if (this.seleccionado()?.id !== usuario.id) {
-          return;
-        }
-        this.detalle.set(detalle);
-        this.cargandoDetalle.set(false);
-      },
-      error: () => {
-        this.errorDetalle.set(true);
-        this.cargandoDetalle.set(false);
-      },
-    });
   }
 
   protected cerrarDetalle(): void {
     this.seleccionado.set(null);
-    this.detalle.set(null);
-  }
-
-  protected valoracion(media: number | null): string {
-    return media ? media.toFixed(1).replace('.', ',') : '—';
-  }
-
-  protected imagenVisible(url: string | null): boolean {
-    return !!url && !this.imagenesRotas().has(url);
-  }
-
-  protected marcarImagenRota(url: string | null): void {
-    if (url) {
-      this.imagenesRotas.update((rotas) => new Set(rotas).add(url));
-    }
-  }
-
-  /** 4 → "★★★★☆" */
-  protected estrellas(puntuacion: number): string {
-    const llenas = Math.max(0, Math.min(5, Math.round(puntuacion)));
-    return '★'.repeat(llenas) + '☆'.repeat(5 - llenas);
-  }
-
-  protected estadoLibro(estado: string): string {
-    const nombres: Record<string, string> = {
-      available: 'Disponible',
-      paused: 'Pausado',
-      hidden: 'Oculto',
-    };
-    return nombres[estado] ?? estado;
   }
 }
