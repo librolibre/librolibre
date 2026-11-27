@@ -1,8 +1,8 @@
 import {HttpClient, HttpParams} from '@angular/common/http';
 import {Injectable, inject} from '@angular/core';
-import {Observable} from 'rxjs';
+import {Observable, map} from 'rxjs';
 import {environment} from '../../environments/environment';
-import {AdminUser, AdminUserFilter, Paginated} from './models';
+import {ApiData, AdminUser, AdminUserDetail, AdminUserFilter, Paginated} from './models';
 
 @Injectable({providedIn: 'root'})
 export class AdminService {
@@ -24,5 +24,19 @@ export class AdminService {
         }
 
         return this.http.get<Paginated<AdminUser>>(`${this.api}/users`, {params});
+    }
+
+    getUser(id: number): Observable<AdminUserDetail> {
+        return this.http
+        .get<ApiData<AdminUserDetail>>(`${this.api}/users/${id}`)
+        .pipe(map((response) => response.data));
+    }
+
+    suspendUser(id: number, reason: string): Observable<unknown> {
+        return this.http.post(`${this.api}/users/${id}/suspend`, {reason});
+    }
+
+    reactivateUser(id: number, reason: string): Observable<unknown> {
+        return this.http.post(`${this.api}/users/${id}/reactivate`, {reason});
     }
 }

@@ -85,3 +85,41 @@ export interface AdminUserFilter {
   q?: string;
   status?: AccountStatus | '';
 }
+
+export interface UserSummary {
+  id: number;
+  username: string;
+  photo_url: string | null;
+}
+
+export interface AdminUserBook {
+  id: number;
+  title: string;
+  author: string;
+  cover_url: string | null;
+  status: string;
+  created_at: string;
+}
+
+export interface AdminRating {
+  id: number;
+  offer_id: number;
+  rater: UserSummary;
+  score: number;
+  comment: string | null;
+  is_published: boolean;
+  created_at: string;
+}
+
+export interface AdminAction {
+  action: string;
+  admin: UserSummary;
+  reason: string | null;
+  created_at: string;
+}
+
+export interface AdminUserDetail extends AdminUser {
+  books: AdminUserBook[];
+  ratings: AdminRating[];
+  actions: AdminAction[];
+}

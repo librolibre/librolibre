@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { AdminService } from '../../../core/admin.service';
-import { AccountStatus, AdminUser, Paginated} from '../../../core/models';
+import { AccountStatus, AdminUser, AdminUserDetail, Paginated} from '../../../core/models';
 import {AdminHeader} from '../admin-header/admin-header';
 
 @Component({
@@ -23,6 +23,14 @@ export class AdminUsuarios {
   protected readonly error = signal<string | null>(null);
   protected readonly seleccionado = signal<AdminUser | null>(null);
 
+  protected readonly accion = signal<'suspender' | 'reactivar' | null>(null);
+
+  protected readonly detalle = signal<AdminUserDetail | null>(null);
+  protected readonly cargandoDetalle = signal(false);
+  protected readonly errorDetalle = signal(false);
+
+  private readonly imagenesRotas = signal(new Set<string>());
+
   private temporizadorBusqueda?: ReturnType<typeof setTimeout>;
 
   constructor() {
@@ -40,6 +48,11 @@ export class AdminUsuarios {
         this.usuarios.set(respuesta.data);
         this.meta.set(respuesta.meta);
         this.cargando.set(false);
+
+        const actual = this.seleccionado();
+        if (actual) {
+          this.seleccionado.set(respuesta.data.find((u) => u.id === actual.id) ?? null);
+        }
       },
       error: () => {
         this.error.set('Error al cargar los usuarios');
@@ -71,9 +84,30 @@ export class AdminUsuarios {
 
   protected seleccionar(usuario: AdminUser): void {
     this.seleccionado.set(usuario);
+    this.detalle.set(null);
+    this.cargandoDetalle.set(true);
+    this.errorDetalle.set(false);
+
+    this.admin.getUser(usuario.id).subscribe({
+      next: (detalle) => {
+        if (this.seleccionado()?.id !== usuario.id) {
+          return;
+        }
+        this.detalle.set(detalle);
+        this.cargandoDetalle.set(false);
+      },
+      error: () => {
+        this.errorDetalle.set(true);
+        this.cargandoDetalle.set(false);
+      },
+    });
   }
 
-  /** "Marta Aguirre" → "MA" */
+  protected cerrarDetalle(): void {
+    this.seleccionado.set(null);
+    this.detalle.set(null);
+  }
+
   protected iniciales(nombre: string): string {
     return (
       nombre
@@ -85,8 +119,32 @@ export class AdminUsuarios {
     );
   }
 
-  /** 4.7 → "4,7"; no ratings yet → "—" */
   protected valoracion(media: number | null): string {
     return media ? media.toFixed(1).replace('.', ',') : '—';
+  }
+
+  protected imagenVisible(url: string | null): boolean {
+    return !!url && !this.imagenesRotas().has(url);
+  }
+
+  protected marcarImagenRota(url: string | null): void {
+    if (url) {
+      this.imagenesRotas.update((rotas) => new Set(rotas).add(url));
+    }
+  }
+
+  /** 4 → "★★★★☆" */
+  protected estrellas(puntuacion: number): string {
+    const llenas = Math.max(0, Math.min(5, Math.round(puntuacion)));
+    return '★'.repeat(llenas) + '☆'.repeat(5 - llenas);
+  }
+
+  protected estadoLibro(estado: string): string {
+    const nombres: Record<string, string> = {
+      available: 'Disponible',
+      paused: 'Pausado',
+      hidden: 'Oculto',
+    };
+    return nombres[estado] ?? estado;
   }
 }

@@ -3,7 +3,7 @@
     subtitulo="Busca cuentas, revisa su actividad y suspende o reactiva"
 />
 
-<div class="pagina">
+<div class="pagina" [class.con-detalle]="seleccionado()">
   <section class="listado">
     <div class="filtros">
       <label class="buscador">
@@ -49,8 +49,8 @@
             >
               <td>
                 <div class="usuario">
-                  @if (usuario.photo_url) {
-                    <img class="avatar" [src]="usuario.photo_url" alt="" />
+                  @if (imagenVisible(usuario.photo_url)) {
++                    <img class="avatar" [src]="usuario.photo_url" alt="" (error)="marcarImagenRota(usuario.photo_url)" />
                   } @else {
                     <span class="avatar">{{ iniciales(usuario.username) }}</span>
                   }
@@ -98,4 +98,103 @@
       }
     }
   </section>
+  @if (seleccionado(); as usuario) {
+    <aside class="detalle">
+      <header class="detalle-cabecera">
+        <span>DETALLE</span>
+        <button type="button" class="cerrar" aria-label="Cerrar detalle" (click)="cerrarDetalle()">×</button>
+      </header>
+
+      <div class="detalle-usuario">
+        @if (imagenVisible(usuario.photo_url)) {
+          <img class="detalle-avatar" [src]="usuario.photo_url" alt="" (error)="marcarImagenRota(usuario.photo_url)" />
+        } @else {
+          <span class="detalle-avatar">{{ iniciales(usuario.username) }}</span>
+        }
+        <div>
+          <p class="detalle-nombre">{{ usuario.username }}</p>
+          <p class="detalle-dato">{{ usuario.email }}</p>
+          <p class="detalle-dato">Alta: {{ usuario.created_at | date: 'dd/MM/yyyy' }}</p>
+          <div class="etiquetas">
+            @if (usuario.status === 'active') {
+              <span class="badge activo">✓ Activo</span>
+            } @else {
+              <span class="badge suspendido">⊘ Suspendido</span>
+            }
+            @if (usuario.role === 'admin') {
+              <span class="badge rol">Admin</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="estadisticas">
+        <div class="estadistica">
+          <strong>{{ usuario.books_count }}</strong>
+          <span>Libros</span>
+        </div>
+        <div class="estadistica">
+          <strong>—</strong>
+          <span>Intercambios</span>
+        </div>
+        <div class="estadistica">
+          <strong>{{ valoracion(usuario.average_rating) }}</strong>
+          <span>Valoración</span>
+        </div>
+      </div>
+
+      @if (cargandoDetalle()) {
+        <p class="bloque-vacio">Cargando actividad…</p>
+      } @else if (errorDetalle()) {
+        <p class="bloque-vacio">No se ha podido cargar la actividad.</p>
+      } @else if (detalle(); as d) {
+        <section class="bloque">
+          <h3>Libros publicados</h3>
+          @for (libro of d.books.slice(0, 4); track libro.id) {
+            <div class="libro">
+              @if (imagenVisible(libro.cover_url)) {
+                <img class="libro-portada" [src]="libro.cover_url" alt="" (error)="marcarImagenRota(libro.cover_url)" />
+              } @else {
+                <span class="libro-portada"></span>
+              }
+              <div class="libro-info">
+                <p class="libro-titulo">{{ libro.title }}</p>
+                <p class="libro-autor">{{ libro.author }}</p>
+              </div>
+              <span class="libro-estado">{{ estadoLibro(libro.status) }}</span>
+            </div>
+          } @empty {
+            <p class="bloque-vacio">No ha publicado libros todavía.</p>
+          }
+        </section>
+
+        <section class="bloque">
+          <h3>Valoraciones recientes</h3>
+          @for (opinion of d.ratings.slice(0, 3); track opinion.id) {
+            <div class="opinion">
+              <div class="opinion-cabecera">
+                <span class="estrellas">{{ estrellas(opinion.score) }}</span>
+                <span>{{ opinion.rater.username }}</span>
+              </div>
+              @if (opinion.comment) {
+                <p class="opinion-comentario">{{ opinion.comment }}</p>
+              }
+            </div>
+          } @empty {
+            <p class="bloque-vacio">Sin valoraciones todavía.</p>
+          }
+        </section>
+      }
+
+      @if (usuario.status === 'active') {
+        <button type="button" class="boton-accion" (click)="accion.set('suspender')">
+          Suspender cuenta
+        </button>
+      } @else {
+        <button type="button" class="boton-accion reactivar" (click)="accion.set('reactivar')">
+          Reactivar cuenta
+        </button>
+      }
+    </aside>
+  }
 </div>
