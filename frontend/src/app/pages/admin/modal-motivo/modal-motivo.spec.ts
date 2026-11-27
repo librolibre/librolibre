@@ -12,6 +12,7 @@ describe('ModalMotivo', () => {
 
     fixture = TestBed.createComponent(ModalMotivo);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('titulo', '¿Suspender a Marta?');
     await fixture.whenStable();
   });
 

@@ -12,6 +12,7 @@ describe('AdminHeader', () => {
 
     fixture = TestBed.createComponent(AdminHeader);
     component = fixture.componentInstance;
+    fixture.componentRef.setInput('titulo', 'Usuarios');
     await fixture.whenStable();
   });
 
