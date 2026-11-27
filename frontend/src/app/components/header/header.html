@@ -31,12 +31,16 @@
             (click)="toggleMenu()"
             [attr.aria-label]="auth.user()?.username || 'Perfil de usuario'"
           >
-            <!-- @if ($any(auth.user())?.avatar || $any(auth.user())?.picture) { -->
-            <!--   <img -->
-            <!--     [src]="$any(auth.user())?.avatar || $any(auth.user())?.picture" -->
-            <!--     [alt]="auth.user()?.username" -->
-            <!--   /> -->
-            <!-- La API envía la foto en photo_url - Laurence -->
+            @if (auth.user()?.photo_url && !fotoRota()) {
+              <img
+                [src]="auth.user()?.photo_url"
+                [alt]="auth.user()?.username"
+                referrerpolicy="no-referrer"
+                (error)="fotoRota.set(true)"
+              />
+            } @else {
+              <span>{{ auth.user()?.username?.charAt(0)?.toUpperCase() || 'U' }}</span>
+            }
             @if (auth.user()?.photo_url) {
               <img [src]="auth.user()?.photo_url" [alt]="auth.user()?.username" />
             } @else {

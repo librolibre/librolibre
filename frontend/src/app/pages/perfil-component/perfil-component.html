@@ -1,0 +1,98 @@
+<app-header />
+
+<nav class="subnav" aria-label="Navegación de perfil">
+  <div class="subnav-contenedor">
+    <a routerLink="/perfil" class="subnav-link activo">Perfil</a>
+    <a routerLink="/perfil/catalogo" class="subnav-link">Tu catálogo</a>
+    <a routerLink="/perfil/ofertas" class="subnav-link">Ofertas</a>
+    <a routerLink="/perfil/valoraciones" class="subnav-link">Valoraciones</a>
+  </div>
+</nav>
+
+<main class="perfil-contenedor">
+  <div class="perfil-header">
+    <div>
+      <h1>Tu perfil</h1>
+      <p>Aquí podrás ver y editar los datos de tu perfil.</p>
+    </div>
+
+    <button type="button" class="btn-cerrar-sesion" (click)="logout()">Cerrar sesión</button>
+  </div>
+
+  <section class="perfil-caja">
+    <h2>Información pública</h2>
+
+    <form class="perfil-form" [formGroup]="form" (ngSubmit)="guardar()">
+      <div class="campo-fila">
+        <label class="campo-label">Imagen de perfil</label>
+        <div class="campo-control avatar-control">
+          <div class="avatar-preview">
+            @if (avatarPreview()) {
+              <img [src]="avatarPreview()!" [alt]="form.controls.username.value" />
+            }
+          </div>
+
+          <input
+            #fileInput
+            type="file"
+            accept="image/*"
+            hidden
+            (change)="onFotoSeleccionada($event)"
+          />
+          <button type="button" class="btn-cambiar-foto" (click)="fileInput.click()">
+            Cambiar foto
+          </button>
+        </div>
+      </div>
+
+      <div class="campo-fila">
+        <label for="username" class="campo-label">Nombre</label>
+        <div class="campo-control">
+          <input type="text" id="username" formControlName="username" placeholder="Nombre" />
+        </div>
+      </div>
+
+      <div class="campo-fila">
+        <label for="description" class="campo-label">Descripción</label>
+        <div class="campo-control">
+          <input
+            type="text"
+            id="description"
+            formControlName="description"
+            placeholder="Cuéntanos algo sobre ti"
+          />
+        </div>
+      </div>
+
+      <div class="campo-fila">
+        <label for="email" class="campo-label">Email</label>
+        <div class="campo-control">
+          <input type="email" id="email" formControlName="email" placeholder="Email" />
+        </div>
+      </div>
+
+      <div class="campo-fila fila-ubicacion">
+        <label for="cp" class="campo-label">Ubicación</label>
+        <div class="campo-control ubicacion-control">
+          <input type="text" id="cp" formControlName="postal_code" placeholder="Código postal" />
+
+          <div class="mapa-contenedor">
+            <iframe title="Mapa de ubicación" [src]="mapaUrl()" loading="lazy"></iframe>
+          </div>
+        </div>
+      </div>
+
+      @if (mensaje()) {
+        <p class="mensaje-estado">{{ mensaje() }}</p>
+      }
+
+      <div class="guardar-contenedor">
+        <button type="submit" class="btn-guardar" [disabled]="guardando()">
+          {{ guardando() ? 'Guardando...' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </section>
+</main>
+
+<app-footer />

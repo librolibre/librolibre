@@ -73,6 +73,13 @@ export interface AdminUser {
   strikes: number;
 }
 
+export interface UpdatePerfilDto {
+  username?: string;
+  description?: string | null;
+  postal_code?: string | null;
+  location?: { latitude: number; longitude: number } | null;
+}
+
 export interface AdminUserFilter {
   page?: number;
   q?: string;

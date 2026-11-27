@@ -12,6 +12,7 @@ export class HeaderComponent implements OnInit {
   protected readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   protected readonly menuAbierto = signal(false);
+  protected readonly fotoRota = signal(false);
 
   ngOnInit(): void {
     if (this.auth.isLoggedIn() && !this.auth.user()) {
