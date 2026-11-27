@@ -1,0 +1,41 @@
+<div class="fondo" (click)="cancelar.emit()"></div>
+
+<div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-titulo">
+  <h2 id="modal-titulo">{{ titulo() }}</h2>
+
+  @if (texto()) {
+    <p class="texto">{{ texto() }}</p>
+  }
+
+  <label class="campo">
+    Motivo (obligatorio)
+    <textarea
+      #campo
+      rows="3"
+      [maxLength]="maximo"
+      placeholder="Explica el motivo de la decisión"
+      [value]="motivo()"
+      (input)="motivo.set(campo.value)"
+    ></textarea>
+  </label>
+  <p class="contador">{{ motivo().length }}/{{ maximo }}</p>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  <div class="botones">
+    <button type="button" class="cancelar" [disabled]="enviando()" (click)="cancelar.emit()">
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="confirmar"
+      [class.peligro]="peligro()"
+      [disabled]="!valido() || enviando()"
+      (click)="enviar()"
+    >
+      {{ enviando() ? 'Enviando…' : textoBoton() }}
+    </button>
+  </div>
+</div>

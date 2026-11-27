@@ -1,14 +1,16 @@
 import { DatePipe } from '@angular/common';
+import {HttpErrorResponse} from '@angular/common/http';
 import {AdminAvatar} from '../admin-avatar/admin-avatar';
 import { Component, inject, signal } from '@angular/core';
 import { AdminService } from '../../../core/admin.service';
 import { AccountStatus, AdminUser, Paginated} from '../../../core/models';
 import {AdminHeader} from '../admin-header/admin-header';
+import {ModalMotivo} from '../modal-motivo/modal-motivo';
 import {formatearValoracion} from '../admin-formato';
 import { UsuarioDetalle } from '../usuario-detalle/usuario-detalle';
 
 @Component({
-  imports: [AdminAvatar, AdminHeader, UsuarioDetalle, DatePipe],
+  imports: [AdminAvatar, AdminHeader, ModalMotivo,UsuarioDetalle, DatePipe],
   selector: 'app-admin-usuarios',
   styleUrl: './admin-usuarios.css',
   templateUrl: './admin-usuarios.html',
@@ -27,6 +29,8 @@ export class AdminUsuarios {
   protected readonly seleccionado = signal<AdminUser | null>(null);
 
   protected readonly accion = signal<'suspender' | 'reactivar' | null>(null);
+  protected readonly enviando = signal(false);
+  protected readonly errorAccion = signal<string | null>(null);
 
   protected readonly valoracion = formatearValoracion;
 
@@ -87,5 +91,38 @@ export class AdminUsuarios {
 
   protected cerrarDetalle(): void {
     this.seleccionado.set(null);
+  }
+
+   protected confirmarAccion(motivo: string): void {
+    const usuario = this.seleccionado();
+    const accion = this.accion();
+    if (!usuario || !accion) {
+      return;
+    }
+
+    this.enviando.set(true);
+    this.errorAccion.set(null);
+
+    const peticion =
+      accion === 'suspender'
+        ? this.admin.suspendUser(usuario.id, motivo)
+        : this.admin.reactivateUser(usuario.id, motivo);
+
+    peticion.subscribe({
+      next: () => {
+        this.enviando.set(false);
+        this.accion.set(null);
+        this.cargar();
+      },
+      error: (err: HttpErrorResponse) => {
+        this.enviando.set(false);
+        this.errorAccion.set(err.error?.message ?? 'No se ha podido completar la acción.');
+      },
+    });
+  }
+
+  protected cancelarAccion(): void {
+    this.accion.set(null);
+    this.errorAccion.set(null);
   }
 }

@@ -102,3 +102,30 @@
     />
   }
 </div>
+
+@if (seleccionado(); as usuario) {
+  @if (accion() === 'suspender') {
+    <app-modal-motivo
+      titulo="¿Suspender a {{ usuario.username }}?"
+      texto="No podrá iniciar sesión y se cerrarán todas sus sesiones abiertas. El motivo quedará registrado."
+      textoBoton="Suspender cuenta"
+      [peligro]="true"
+      [enviando]="enviando()"
+      [error]="errorAccion()"
+      (confirmar)="confirmarAccion($event)"
+      (cancelar)="cancelarAccion()"
+    />
+  }
+
+  @if (accion() === 'reactivar') {
+    <app-modal-motivo
+      titulo="¿Reactivar a {{ usuario.username }}?"
+      texto="Podrá volver a iniciar sesión con Google y sus strikes volverán a 0. El motivo quedará registrado."
+      textoBoton="Reactivar cuenta"
+      [enviando]="enviando()"
+      [error]="errorAccion()"
+      (confirmar)="confirmarAccion($event)"
+      (cancelar)="cancelarAccion()"
+    />
+  }
+}

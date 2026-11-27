@@ -1,0 +1,111 @@
+:host {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+}
+
+.fondo {
+  position: absolute;
+  inset: 0;
+  background: rgba(35, 36, 39, 0.55);
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  border-radius: 12px;
+  background: #f2f2f2;
+  color: #232427;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+}
+
+h2 {
+  margin: 0 0 8px;
+  font-size: 1.2rem;
+}
+
+.texto {
+  margin: 0 0 20px;
+  color: #666;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+textarea {
+  padding: 10px 12px;
+  border: 1px solid #c9c9c9;
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 400;
+  resize: vertical;
+}
+
+textarea:focus {
+  outline: 2px solid #5e8a57;
+  outline-offset: 1px;
+}
+
+.contador {
+  margin: 4px 0 0;
+  color: #888;
+  font-size: 0.7rem;
+  text-align: right;
+}
+
+.error {
+  margin: 12px 0 0;
+  color: #8a2b2b;
+  font-size: 0.8rem;
+}
+
+.botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.botones button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.botones button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.cancelar {
+  border: 1px solid #5e8a57;
+  background: transparent;
+  color: #5e8a57;
+}
+
+.confirmar {
+  border: none;
+  background: #5e8a57;
+  color: #fff;
+}
+
+.confirmar.peligro {
+  background: #c8784a;
+}
