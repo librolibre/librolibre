@@ -21,7 +21,15 @@ class AdminUserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $averageRating = $this->ratingsReceived()->avg('score');
+        // $averageRating = $this->ratingsReceived()->avg('score');
+        // Si la lista ya trae el dato, sin consulta extra - Laurence
+        $loaded = $this->resource->getAttributes();
+        $averageRating = array_key_exists('ratings_received_avg_score', $loaded)
+            ? $loaded['ratings_received_avg_score']
+            : $this->ratingsReceived()->avg('score');
+        $booksCount = array_key_exists('books_count', $loaded)
+            ? (int) $loaded['books_count']
+            : $this->books()->count();
         // The photos disk comes from config (public locally, a bucket in production)
         /** @var FilesystemAdapter $photosDisk */
         $photosDisk = Storage::disk(config('filesystems.photos_disk'));
@@ -55,8 +63,9 @@ class AdminUserResource extends JsonResource
             'role' => $this->profile->code,
             /** Fecha de alta. */
             'created_at' => $this->created_at,
+            // 'books_count' => $this->books()->count(),
             /** Libros publicados, en cualquier estado. */
-            'books_count' => $this->books()->count(),
+            'books_count' => $booksCount,
             /** Media de las valoraciones recibidas (1 decimal), o `null` si no tiene ninguna. */
             'average_rating' => $averageRating === null ? null : round((float) $averageRating, 1),
             /** Avisos acumulados por denuncias (0 a 3). */
