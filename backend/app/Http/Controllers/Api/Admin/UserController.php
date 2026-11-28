@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Http\Resources\AdminUserResource;
 use App\Http\Resources\AdminUserDetailResource;
+use App\Http\Resources\AdminUserResource;
 use App\Models\User;
 use App\Services\AccountService;
 use Dedoc\Scramble\Attributes\Group;
@@ -44,6 +44,8 @@ class UserController extends Controller
             }))
             ->when($request->status, fn ($query, $status) => $query->where('status', $status))
             ->withCount('books')
+            // La media en la misma consulta, no una por usuario - Laurence
+            ->withAvg('ratingsReceived', 'score')
             ->orderBy('username')
             ->paginate(20);
 
@@ -61,10 +63,10 @@ class UserController extends Controller
     {
         $user->load([
             'profile',
-            //'books' => fn ($q) => $q->with(['categories', 'photos', 'user.profile'])->latest(),
+            // 'books' => fn ($q) => $q->with(['categories', 'photos', 'user.profile'])->latest(),
             // BookResource: aún no listos categorías, fotos, propietarios - Laurence
             'books' => fn ($q) => $q->latest(),
-            //'offers' => fn ($q) => $q->with([
+            // 'offers' => fn ($q) => $q->with([
             //    'requestedBook.categories',
             //    'requestedBook.photos',
             //    'requestedBook.owner.profile',
@@ -73,14 +75,14 @@ class UserController extends Controller
             //    'offeredBook.owner.profile',
             //    'requester',
             //    'owner',
-            //])->latest(),
+            // ])->latest(),
             'ratingsReceived' => fn ($q) => $q->with('rater')->latest(),
-            //'reportsReceived' => fn ($q) => $q->with([
+            // 'reportsReceived' => fn ($q) => $q->with([
             //    'reporter',
             //    'reportedUser.profile',
             //    'resolution.admin',
-            //])->latest(),
-            //'adminActions' => fn ($q) => $q->with('admin')->latest(),
+            // ])->latest(),
+            // 'adminActions' => fn ($q) => $q->with('admin')->latest(),
             // Las acciones sobre la cuenta, no las que hizo como admin - Laurence
             'actionsReceived' => fn ($q) => $q->with('admin')->latest(),
         ])->loadCount('books');

@@ -3,9 +3,9 @@
 namespace App\Http\Resources;
 
 use App\Models\User;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -21,7 +21,10 @@ class OwnUserResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $averageRating = $this->ratingsReceived()->avg('score');
+        // $averageRating = $this->ratingsReceived()->avg('score');
+        // Media y número de valoraciones en una sola consulta - Laurence
+        $ratings = $this->ratingsReceived()->selectRaw('avg(score) as average, count(*) as total')->first();
+        $averageRating = $ratings->average;
         // The photos disk comes from config (public locally, a bucket in production)
         /** @var FilesystemAdapter $photosDisk */
         $photosDisk = Storage::disk(config('filesystems.photos_disk'));
@@ -36,12 +39,15 @@ class OwnUserResource extends JsonResource
             'description' => $this->description,
             /**
              * Códigos de los idiomas de lectura.
+             *
              * @var list<string>
+             *
              * @example ["es", "eu"]
              */
             'languages' => $this->languages->pluck('code'),
             'average_rating' => $averageRating === null ? null : round((float) $averageRating, 1),
-            'ratings_count' => $this->ratingsReceived()->count(),
+            // 'ratings_count' => $this->ratingsReceived()->count(),
+            'ratings_count' => (int) $ratings->total,
             /** Intercambios completados, como solicitante o como dueño del libro. */
             'exchanges_count' => $this->completedExchangesCount(),
             'member_since' => $this->created_at,
@@ -53,6 +59,7 @@ class OwnUserResource extends JsonResource
             ],
             /**
              * Corresponde a `profiles.code`.
+             *
              * @var 'user'|'admin'
              */
             'role' => $this->profile->code,
