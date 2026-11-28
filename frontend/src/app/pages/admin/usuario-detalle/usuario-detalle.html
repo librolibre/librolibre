@@ -83,7 +83,9 @@
 }
 
   @if (u.role === 'admin') {
-    <p class="bloque-vacio">Las cuentas de administrador no se pueden suspender.</p>
-  } @else if (u.status === 'active') {
-    <button type="button" class="boton-accion reactivar" (click)="accion.emit('suspender')">Suspender cuenta</button>
-  }
+  <p class="bloque-vacio">Las cuentas de administrador no se pueden suspender.</p>
+} @else if (u.status === 'active') {
+  <button type="button" class="boton-accion" (click)="accion.emit('suspender')">Suspender cuenta</button>
+} @else {
+  <button type="button" class="boton-accion reactivar" (click)="accion.emit('reactivar')">Reactivar cuenta</button>
+}
