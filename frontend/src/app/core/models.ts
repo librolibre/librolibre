@@ -97,6 +97,7 @@ export interface AdminUserBook {
   title: string;
   author: string;
   cover_url: string | null;
+
   status: string;
   created_at: string;
 }
@@ -122,4 +123,16 @@ export interface AdminUserDetail extends AdminUser {
   books: AdminUserBook[];
   ratings: AdminRating[];
   actions: AdminAction[];
+}
+
+export interface CatalogBook {
+  id: number;
+  title: string;
+  author: string;
+  cover_url: string | null;
+  category?: {
+    code: string;
+    name: string;
+  } | null;
+  status?: string;
 }

@@ -1,7 +1,7 @@
 <article class="tarjeta">
   <div class="portada">
-    @if (libro().portada) {
-      <img [src]="libro().portada" [alt]="libro().titulo" />
+    @if (libro().portada && !portadaRota()) {
+      <img [src]="libro().portada" [alt]="libro().titulo" (error)="portadaRota.set(true)" />
     }
   </div>
   <div class="info">

@@ -18,8 +18,14 @@
   <section class="destacados">
     <h2>Nuestra mejor elección</h2>
     <div class="tarjetas">
-      @for (libro of libros; track libro.titulo) {
-        <app-libro-card [libro]="libro" />
+      @if (cargando()) {
+        <p>Cargando libros...</p>
+      } @else {
+        @for (libro of libros(); track libro.id) {
+          <app-libro-card [libro]="libro" />
+        } @empty {
+          <p>No hay libros disponibles todavía.</p>
+        }
       }
     </div>
 
