@@ -1,4 +1,4 @@
-import { Component, input } from '@angular/core';
+import { Component, input, signal } from '@angular/core';
 import { Libro } from '../../interfaces/libro';
 
 @Component({
@@ -9,4 +9,5 @@ import { Libro } from '../../interfaces/libro';
 })
 export class LibroCard {
   libro = input.required<Libro>();
+  protected readonly portadaRota = signal(false);
 }

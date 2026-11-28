@@ -1,9 +1,11 @@
-// import { Component } from '@angular/core';
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Footer } from '../../components/footer/footer';
 import { HeaderComponent } from '../../components/header/header';
 import { LibroCard } from '../../components/libro-card/libro-card';
-import { Footer } from '../../components/footer/footer';
+import { CatalogService } from '../../core/catalog.service';
+import { CatalogBook } from '../../core/models';
+import { Libro } from '../../interfaces/libro';
 
 @Component({
   imports: [HeaderComponent, LibroCard, Footer],
@@ -11,14 +13,30 @@ import { Footer } from '../../components/footer/footer';
   styleUrl: './home-component.css',
   templateUrl: './home-component.html',
 })
-export class HomeComponent {
-  // Aviso si la cuenta está suspendida (#24) - Laurence
+export class HomeComponent implements OnInit {
+  private readonly catalogService = inject(CatalogService);
+
   protected readonly suspended =
     inject(ActivatedRoute).snapshot.queryParamMap.get('error') === 'suspended';
 
-  protected readonly libros = [
-    { titulo: 'Nombre del libro', genero: 'Género' },
-    { titulo: 'Nombre del libro 2', genero: 'Género' },
-    { titulo: 'Nombre del libro 3', genero: 'Género' },
-  ];
+  protected readonly libros = signal<Libro[]>([]);
+  protected readonly cargando = signal(true);
+
+  ngOnInit(): void {
+    this.catalogService.getBooks({ per_page: 6 }).subscribe({
+      next: (res) => {
+        const mapeados: Libro[] = res.data.map((book: CatalogBook) => ({
+          id: book.id,
+          titulo: book.title,
+          genero: book.category?.name ?? 'General',
+          portada: book.cover_url,
+        }));
+        this.libros.set(mapeados);
+        this.cargando.set(false);
+      },
+      error: () => {
+        this.cargando.set(false);
+      },
+    });
+  }
 }
